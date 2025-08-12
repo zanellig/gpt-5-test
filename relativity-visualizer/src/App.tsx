@@ -8,6 +8,7 @@ function App() {
   const addMass = useSimStore((s) => s.addMass)
   const addPhoton = useSimStore((s) => s.addPhoton)
   const addClock = useSimStore((s) => s.addClock)
+  const addTestBody = useSimStore((s) => s.addTestBody)
   const setPaused = useSimStore((s) => s.setPaused)
   const setDt = useSimStore((s) => s.setDt)
   const reset = useSimStore((s) => s.reset)
@@ -54,6 +55,7 @@ function App() {
       const a = Math.random() * Math.PI * 2
       addMass({ name: 'Planet', mass: 4 + Math.random() * 6, position: [Math.cos(a) * r, 0, Math.sin(a) * r], color: '#44bbff' })
     }),
+    'Add Test Body': button(() => addTestBody()),
   })
 
   useControls('Modes', {

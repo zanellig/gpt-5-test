@@ -19,6 +19,14 @@ export interface Photon {
   color?: string
 }
 
+export interface TestBody {
+  id: string
+  position: Vector3Tuple
+  velocity: Vector3Tuple
+  mass: number
+  color?: string
+}
+
 export interface GravClock {
   id: string
   position: Vector3Tuple
@@ -36,8 +44,10 @@ export interface SimState {
   masses: MassBody[]
   photons: Photon[]
   clocks: GravClock[]
+  testBodies: TestBody[]
   uiMode: 'select' | 'addMass' | 'addClock' | 'addPhoton'
   selectedMassId?: string
+  selectedTestBodyId?: string
 
   addMass: (partial?: Partial<MassBody>) => string
   updateMass: (id: string, partial: Partial<MassBody>) => void
@@ -51,12 +61,17 @@ export interface SimState {
   updateClock: (id: string, partial: Partial<GravClock>) => void
   removeClock: (id: string) => void
 
+  addTestBody: (partial?: Partial<TestBody>) => string
+  updateTestBody: (id: string, partial: Partial<TestBody>) => void
+  removeTestBody: (id: string) => void
+
   setPaused: (paused: boolean) => void
   setDt: (dt: number) => void
   reset: () => void
 
   setUiMode: (mode: SimState['uiMode']) => void
   setSelectedMassId: (id?: string) => void
+  setSelectedTestBodyId: (id?: string) => void
 }
 
 let idCounter = 0
@@ -67,8 +82,10 @@ export const useSimStore = create<SimState>((set) => ({
   masses: [],
   photons: [],
   clocks: [],
+  testBodies: [],
   uiMode: 'select',
   selectedMassId: undefined,
+  selectedTestBodyId: undefined,
 
   addMass: (partial) => {
     const id = nextId()
@@ -130,12 +147,29 @@ export const useSimStore = create<SimState>((set) => ({
 
   removeClock: (id) => set((s) => ({ clocks: s.clocks.filter((c) => c.id !== id) })),
 
+  addTestBody: (partial) => {
+    const id = nextId()
+    const body: TestBody = {
+      id,
+      mass: partial?.mass ?? 1,
+      position: partial?.position ?? [-10, 0, 0],
+      velocity: partial?.velocity ?? [5, 0, 0],
+      color: partial?.color ?? '#aaff66',
+    }
+    set((s) => ({ testBodies: [...s.testBodies, body] }))
+    return id
+  },
+  updateTestBody: (id, partial) =>
+    set((s) => ({ testBodies: s.testBodies.map((b) => (b.id === id ? { ...b, ...partial } : b)) })),
+  removeTestBody: (id) => set((s) => ({ testBodies: s.testBodies.filter((b) => b.id !== id) })),
+
   setPaused: (paused) => set((s) => ({ config: { ...s.config, paused } })),
   setDt: (dt) => set((s) => ({ config: { ...s.config, dt } })),
-  reset: () => set({ masses: [], photons: [], clocks: [] }),
+  reset: () => set({ masses: [], photons: [], clocks: [], testBodies: [], selectedMassId: undefined, selectedTestBodyId: undefined }),
 
   setUiMode: (mode) => set({ uiMode: mode }),
   setSelectedMassId: (id) => set({ selectedMassId: id }),
+  setSelectedTestBodyId: (id) => set({ selectedTestBodyId: id }),
 }))
 
 

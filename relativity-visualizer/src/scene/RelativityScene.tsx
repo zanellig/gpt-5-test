@@ -7,17 +7,20 @@ import { SpacetimeGrid } from '../components/SpacetimeGrid'
 import { Mass } from '../components/Mass'
 import { Photon } from '../components/Photon'
 import { Clock } from '../components/Clock'
+import { TestBody } from '../components/TestBody'
 import { DEFAULT_DT } from '../lib/constants'
-import { stepClock, stepPhoton } from '../lib/physics'
+import { stepClock, stepPhoton, stepTestBody } from '../lib/physics'
 
 function SimulationStepper() {
-  const { config, masses, photons, clocks, updatePhoton, updateClock, paused } = useSimStore((s) => ({
+  const { config, masses, photons, clocks, updatePhoton, updateClock, testBodies, updateTestBody, paused } = useSimStore((s) => ({
     config: s.config,
     masses: s.masses,
     photons: s.photons,
     clocks: s.clocks,
+    testBodies: s.testBodies,
     updatePhoton: s.updatePhoton,
     updateClock: s.updateClock,
+    updateTestBody: s.updateTestBody,
     paused: s.config.paused,
   }))
 
@@ -35,6 +38,10 @@ function SimulationStepper() {
       for (const c of clocks) {
         const next = stepClock(c, masses, step)
         updateClock(c.id, next)
+      }
+      for (const b of testBodies) {
+        const next = stepTestBody(b, masses, step)
+        updateTestBody(b.id, next)
       }
       accumulator.current -= step
     }
@@ -69,10 +76,11 @@ function InteractionPlane() {
 }
 
 export function RelativityScene() {
-  const { masses, photons, clocks, setSelectedMassId } = useSimStore((s) => ({
+  const { masses, photons, clocks, testBodies, setSelectedMassId } = useSimStore((s) => ({
     masses: s.masses,
     photons: s.photons,
     clocks: s.clocks,
+    testBodies: s.testBodies,
     setSelectedMassId: s.setSelectedMassId,
   }))
 
@@ -98,6 +106,9 @@ export function RelativityScene() {
       ))}
       {clocks.map((c) => (
         <Clock key={c.id} clock={c} />
+      ))}
+      {testBodies.map((b) => (
+        <TestBody key={b.id} body={b} />
       ))}
 
       <InteractionPlane />

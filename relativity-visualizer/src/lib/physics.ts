@@ -1,5 +1,5 @@
 import { EPSILON, G_SIM, C_SIM } from './constants'
-import type { MassBody, Photon, GravClock, Vector3Tuple } from '../state/store'
+import type { MassBody, Photon, GravClock, Vector3Tuple, TestBody } from '../state/store'
 
 export function subtract(a: Vector3Tuple, b: Vector3Tuple): Vector3Tuple {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
@@ -70,6 +70,13 @@ export function timeDilationFactor(point: Vector3Tuple, masses: MassBody[]): num
 export function stepClock(clock: GravClock, masses: MassBody[], dt: number): GravClock {
   const factor = timeDilationFactor(clock.position, masses)
   return { ...clock, properTime: clock.properTime + dt * factor }
+}
+
+export function stepTestBody(body: TestBody, masses: MassBody[], dt: number): TestBody {
+  const a = gravitationalAcceleration(body.position, masses)
+  const newVel = add(body.velocity, scale(a, dt))
+  const pos = add(body.position, scale(newVel, dt))
+  return { ...body, velocity: newVel, position: pos }
 }
 
 
