@@ -12,18 +12,16 @@ import { DEFAULT_DT } from '../lib/constants'
 import { stepClock, stepPhoton, stepTestBody, stepMass } from '../lib/physics'
 
 function SimulationStepper() {
-  const { config, masses, photons, clocks, updateMass, updatePhoton, updateClock, testBodies, updateTestBody, paused } = useSimStore((s) => ({
-    config: s.config,
-    masses: s.masses,
-    photons: s.photons,
-    clocks: s.clocks,
-    testBodies: s.testBodies,
-    updateMass: s.updateMass,
-    updatePhoton: s.updatePhoton,
-    updateClock: s.updateClock,
-    updateTestBody: s.updateTestBody,
-    paused: s.config.paused,
-  }))
+  const config = useSimStore((s) => s.config)
+  const masses = useSimStore((s) => s.masses)
+  const photons = useSimStore((s) => s.photons)
+  const clocks = useSimStore((s) => s.clocks)
+  const testBodies = useSimStore((s) => s.testBodies)
+  const updateMass = useSimStore((s) => s.updateMass)
+  const updatePhoton = useSimStore((s) => s.updatePhoton)
+  const updateClock = useSimStore((s) => s.updateClock)
+  const updateTestBody = useSimStore((s) => s.updateTestBody)
+  const paused = useSimStore((s) => s.config.paused)
 
   const accumulator = useRef(0)
 
@@ -81,13 +79,11 @@ function InteractionPlane() {
 }
 
 export function RelativityScene() {
-  const { masses, photons, clocks, testBodies, setSelectedMassId } = useSimStore((s) => ({
-    masses: s.masses,
-    photons: s.photons,
-    clocks: s.clocks,
-    testBodies: s.testBodies,
-    setSelectedMassId: s.setSelectedMassId,
-  }))
+  const masses = useSimStore((s) => s.masses)
+  const photons = useSimStore((s) => s.photons)
+  const clocks = useSimStore((s) => s.clocks)
+  const testBodies = useSimStore((s) => s.testBodies)
+  const setSelectedMassId = useSimStore((s) => s.setSelectedMassId)
 
   const ambient = useMemo(() => new THREE.AmbientLight(0xffffff, 0.4), [])
   const dir = useMemo(() => new THREE.DirectionalLight(0xffffff, 1.0), [])
