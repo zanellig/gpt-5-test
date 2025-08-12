@@ -29,4 +29,14 @@ export const GW_SPEED = C_SIM; // waves propagate at c
 export const GW_BASE_AMP = 0.15; // visual amplitude baseline
 export const GW_DAMPING = 0.02; // amplitude attenuation per unit distance
 
+// Compact object thresholds (sim-scaled)
+export const TOV_LIMIT_SIM = 12; // beyond this, NS collapses to BH in our sim units
+
+// Effect durations (seconds)
+export const TTL_WAVEBURST = 10;
+export const TTL_KILONOVA = 12;
+export const TTL_ACCRETION = 15;
+export const TTL_EXPLOSION = 6;
+export const TTL_DEBRIS = 20;
+
 

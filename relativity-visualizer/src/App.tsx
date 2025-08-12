@@ -27,7 +27,7 @@ function App() {
   useEffect(() => {
     // Seed initial scene
     if (useSimStore.getState().masses.length === 0) {
-      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800', isBlackHole: true, spin: [0, 0.6, 0] })
+      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800', isBlackHole: true, kind: 'blackHole', spin: [0, 0.6, 0] })
       addClock({ position: [5, 0, 0], color: '#00ff88' })
       addClock({ position: [10, 0, 0], color: '#ffffff' })
     }
@@ -38,7 +38,7 @@ function App() {
     Play: button(() => setPaused(false)),
     'Reset Scene': button(() => {
       reset()
-      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800', isBlackHole: true, spin: [0, 0.6, 0] })
+      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800', isBlackHole: true, kind: 'blackHole', spin: [0, 0.6, 0] })
       addClock({ position: [5, 0, 0], color: '#00ff88' })
       addClock({ position: [10, 0, 0], color: '#ffffff' })
     }),
@@ -64,8 +64,8 @@ function App() {
     'Add Test Body': button(() => addTestBody()),
     'Spawn Inspiral (GW)': button(() => {
       reset()
-      const id1 = addMass({ name: 'BH A', mass: 15, position: [-5, 0, 0], velocity: [0, 0, 1.2], color: '#ff8844', isBlackHole: true, spin: [0, 0.6, 0] })
-      const id2 = addMass({ name: 'BH B', mass: 12, position: [5, 0, 0], velocity: [0, 0, -1.2], color: '#ffcc55', isBlackHole: true, spin: [0, -0.4, 0] })
+      addMass({ name: 'BH A', mass: 15, position: [-5, 0, 0], velocity: [0, 0, 1.2], color: '#ff8844', isBlackHole: true, kind: 'blackHole', spin: [0, 0.6, 0] })
+      addMass({ name: 'BH B', mass: 12, position: [5, 0, 0], velocity: [0, 0, -1.2], color: '#ffcc55', isBlackHole: true, kind: 'blackHole', spin: [0, -0.4, 0] })
       addClock({ position: [0, 0, 0], color: '#ffffff' })
       setConfig({ showGravitationalWaves: true })
     }),

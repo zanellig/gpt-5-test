@@ -12,11 +12,17 @@ import { BlackHole } from '../components/BlackHole'
 import { GravitationalWaves } from '../components/GravitationalWaves'
 import { FirstPersonRig } from '../components/FirstPersonRig'
 import { Trail } from '../components/Trails'
+import { EffectsLayer } from '../components/Effects'
 import { DEFAULT_DT } from '../lib/constants'
 import { stepClock, stepPhoton, stepTestBody, stepMass } from '../lib/physics'
+import { bodyRadiusApprox, distance } from '../lib/physics'
+import { TTL_WAVEBURST, TTL_KILONOVA, TTL_ACCRETION, TTL_EXPLOSION, TTL_DEBRIS, TOV_LIMIT_SIM } from '../lib/constants'
 
 function SimulationStepper() {
   const config = useSimStore((s) => s.config)
+  const addEffect = useSimStore((s) => s.addEffect)
+  const removeMass = useSimStore((s) => s.removeMass)
+  const addMass = useSimStore((s) => s.addMass)
   const masses = useSimStore((s) => s.masses)
   const photons = useSimStore((s) => s.photons)
   const clocks = useSimStore((s) => s.clocks)
@@ -50,6 +56,86 @@ function SimulationStepper() {
         const next = stepTestBody(b, masses, step, config)
         updateTestBody(b.id, next)
       }
+      // After integration step, check collisions among masses
+      for (let i = 0; i < masses.length; i++) {
+        for (let j = i + 1; j < masses.length; j++) {
+          const a = masses[i]
+          const b = masses[j]
+          const ra = bodyRadiusApprox(a)
+          const rb = bodyRadiusApprox(b)
+          const d = distance(a.position, b.position)
+          if (d <= ra + rb) {
+            // Handle interaction based on kinds
+            const kindA = a.kind ?? (a.isBlackHole ? 'blackHole' : 'star')
+            const kindB = b.kind ?? (b.isBlackHole ? 'blackHole' : 'star')
+            const pos: [number, number, number] = [
+              (a.position[0] + b.position[0]) / 2,
+              (a.position[1] + b.position[1]) / 2,
+              (a.position[2] + b.position[2]) / 2,
+            ]
+
+            const totalMass = a.mass + b.mass
+            const momentum: [number, number, number] = [
+              a.velocity[0] * a.mass + b.velocity[0] * b.mass,
+              a.velocity[1] * a.mass + b.velocity[1] * b.mass,
+              a.velocity[2] * a.mass + b.velocity[2] * b.mass,
+            ]
+            const vMerged: [number, number, number] = [
+              momentum[0] / totalMass,
+              momentum[1] / totalMass,
+              momentum[2] / totalMass,
+            ]
+
+            // Remove originals
+            removeMass(a.id)
+            removeMass(b.id)
+
+            // BH-BH -> BH + GW burst
+            if (kindA === 'blackHole' && kindB === 'blackHole') {
+              addMass({ name: 'BH Merger', mass: totalMass, position: pos, velocity: vMerged, color: '#ff9966', isBlackHole: true, spin: [0, (a.spin?.[1] ?? 0) + (b.spin?.[1] ?? 0), 0], kind: 'blackHole' })
+              addEffect({ type: 'waveBurst', origin: pos, amplitude: 1, ttl: TTL_WAVEBURST })
+              continue
+            }
+
+            // NS-NS -> kilonova, outcome BH if above TOV
+            if (kindA === 'neutronStar' && kindB === 'neutronStar') {
+              addEffect({ type: 'kilonova', origin: pos, ttl: TTL_KILONOVA })
+              if (totalMass >= TOV_LIMIT_SIM) {
+                addMass({ name: 'BH (post-kilonova)', mass: totalMass, position: pos, velocity: vMerged, color: '#ff8844', isBlackHole: true, kind: 'blackHole' })
+              } else {
+                addMass({ name: 'Massive NS', mass: totalMass, position: pos, velocity: vMerged, color: '#ddeeff', kind: 'neutronStar' })
+              }
+              continue
+            }
+
+            // BH - Star/Planet -> tidal disruption + accretion disk
+            if ((kindA === 'blackHole' && (kindB === 'star' || kindB === 'planet')) || (kindB === 'blackHole' && (kindA === 'star' || kindA === 'planet'))) {
+              const bh = kindA === 'blackHole' ? a : b
+              const other = kindA === 'blackHole' ? b : a
+              // Keep BH, remove star/planet (already removed), create disk around BH and wave burst
+              addEffect({ type: 'accretionDisk', massId: bh.id, radius: Math.max(1, bodyRadiusApprox(other) * 3), ttl: TTL_ACCRETION })
+              addEffect({ type: 'waveBurst', origin: pos, amplitude: 0.5, ttl: TTL_WAVEBURST })
+              continue
+            }
+
+            // Star-Star -> hotter larger star + explosion ejecta
+            if ((kindA === 'star' && kindB === 'star')) {
+              addMass({ name: 'Merged Star', mass: totalMass, position: pos, velocity: vMerged, color: '#ffd080', kind: 'star' })
+              addEffect({ type: 'explosion', origin: pos, ttl: TTL_EXPLOSION })
+              continue
+            }
+
+            // Planetary collisions -> merged body + debris ring
+            if ((kindA === 'planet' && kindB === 'planet') || ((kindA === 'planet' && kindB === 'star') || (kindB === 'planet' && kindA === 'star'))) {
+              const kind = (kindA === 'planet' && kindB === 'planet') ? 'planet' : 'star'
+              const id = addMass({ name: kind === 'planet' ? 'Merged Planet' : 'Star Impact', mass: totalMass, position: pos, velocity: vMerged, color: kind === 'planet' ? '#88aaff' : '#ffbb66', kind })
+              addEffect({ type: 'debrisRing', massId: id, inner: 0.8, outer: 1.6, ttl: TTL_DEBRIS })
+              continue
+            }
+          }
+        }
+      }
+
       accumulator.current -= step
     }
   })
@@ -131,6 +217,7 @@ export function RelativityScene() {
         <GravitationalWaves sources={masses} enabled={config.showGravitationalWaves} />
       ) : null}
       {config.viewMode === 'firstPerson' ? <FirstPersonRig /> : null}
+      <EffectsLayer />
     </Canvas>
   )
 }

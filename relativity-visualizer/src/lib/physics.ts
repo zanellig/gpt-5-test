@@ -146,4 +146,27 @@ export function stepMass(body: MassBody, masses: MassBody[], dt: number): MassBo
   return { ...body, velocity: newVel, position: pos }
 }
 
+// Collision detection helpers
+export function bodyRadiusApprox(m: MassBody): number {
+  // Stylized radii per kind
+  const base = Math.cbrt(Math.max(0.0001, m.mass))
+  const kind = m.kind ?? (m.isBlackHole ? 'blackHole' : 'star')
+  switch (kind) {
+    case 'blackHole':
+      return 0.2 * base
+    case 'neutronStar':
+      return 0.35 * base
+    case 'planet':
+      return 0.4 * base
+    case 'star':
+    default:
+      return 0.6 * base
+  }
+}
+
+export function distance(a: Vector3Tuple, b: Vector3Tuple): number {
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+}
+
+
 

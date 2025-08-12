@@ -14,6 +14,8 @@ export interface MassBody {
   spin?: Vector3Tuple
   // Render Kerr visuals (horizon/ergosphere)
   isBlackHole?: boolean
+  // Physical classification for interactions
+  kind?: 'blackHole' | 'neutronStar' | 'star' | 'planet'
 }
 
 export interface Photon {
@@ -60,6 +62,7 @@ export interface SimState {
   photons: Photon[]
   clocks: GravClock[]
   testBodies: TestBody[]
+  effects: Effect[]
   uiMode: 'select' | 'addMass' | 'addClock' | 'addPhoton'
   selectedMassId?: string
   selectedTestBodyId?: string
@@ -91,7 +94,31 @@ export interface SimState {
   setUiMode: (mode: SimState['uiMode']) => void
   setSelectedMassId: (id?: string) => void
   setSelectedTestBodyId: (id?: string) => void
+  addEffect: (e: EffectInput) => string
+  removeEffect: (id: string) => void
 }
+export interface EffectBase {
+  id: string
+  type: 'waveBurst' | 'kilonova' | 'accretionDisk' | 'explosion' | 'debrisRing' | 'tidalStream'
+  createdAt: number
+}
+
+export type Effect =
+  | (EffectBase & { type: 'waveBurst'; origin: Vector3Tuple; amplitude: number; ttl: number })
+  | (EffectBase & { type: 'kilonova'; origin: Vector3Tuple; color?: string; ttl: number })
+  | (EffectBase & { type: 'accretionDisk'; massId: string; radius: number; ttl: number })
+  | (EffectBase & { type: 'explosion'; origin: Vector3Tuple; color?: string; ttl: number })
+  | (EffectBase & { type: 'debrisRing'; massId: string; inner: number; outer: number; ttl: number })
+  | (EffectBase & { type: 'tidalStream'; from: Vector3Tuple; toMassId: string; ttl: number })
+
+export type EffectInput =
+  | { type: 'waveBurst'; origin: Vector3Tuple; amplitude: number; ttl: number }
+  | { type: 'kilonova'; origin: Vector3Tuple; color?: string; ttl: number }
+  | { type: 'accretionDisk'; massId: string; radius: number; ttl: number }
+  | { type: 'explosion'; origin: Vector3Tuple; color?: string; ttl: number }
+  | { type: 'debrisRing'; massId: string; inner: number; outer: number; ttl: number }
+  | { type: 'tidalStream'; from: Vector3Tuple; toMassId: string; ttl: number }
+
 
 let idCounter = 0
 const nextId = () => `${++idCounter}`
@@ -111,6 +138,7 @@ export const useSimStore = create<SimState>((set) => ({
   photons: [],
   clocks: [],
   testBodies: [],
+  effects: [],
   uiMode: 'select',
   selectedMassId: undefined,
   selectedTestBodyId: undefined,
@@ -127,6 +155,8 @@ export const useSimStore = create<SimState>((set) => ({
       color: partial?.color ?? '#ffaa00',
       spin: partial?.spin ?? [0, 0.2, 0],
       isBlackHole: partial?.isBlackHole ?? false,
+      kind:
+        partial?.kind ?? (partial?.isBlackHole ? 'blackHole' : (partial?.name?.toLowerCase().includes('planet') ? 'planet' : 'star')),
     }
     set((s) => ({ masses: [...s.masses, mass] }))
     return id
@@ -204,6 +234,7 @@ export const useSimStore = create<SimState>((set) => ({
     photons: [],
     clocks: [],
     testBodies: [],
+    effects: [],
     selectedMassId: undefined,
     selectedTestBodyId: undefined,
     observer: undefined,
@@ -212,6 +243,13 @@ export const useSimStore = create<SimState>((set) => ({
   setUiMode: (mode) => set({ uiMode: mode }),
   setSelectedMassId: (id) => set({ selectedMassId: id }),
   setSelectedTestBodyId: (id) => set({ selectedTestBodyId: id }),
+  addEffect: (e) => {
+    const id = nextId()
+    const eff: Effect = { ...(e as any), id, createdAt: performance.now() }
+    set((s) => ({ effects: [...s.effects, eff] }))
+    return id
+  },
+  removeEffect: (id) => set((s) => ({ effects: s.effects.filter((x) => x.id !== id) })),
 }))
 
 
