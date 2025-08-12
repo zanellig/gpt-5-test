@@ -13,6 +13,7 @@ import { GravitationalWaves } from '../components/GravitationalWaves'
 import { FirstPersonRig } from '../components/FirstPersonRig'
 import { Trail } from '../components/Trails'
 import { EffectsLayer } from '../components/Effects'
+import { HUDPanel } from '../components/HUD'
 import { DEFAULT_DT } from '../lib/constants'
 import { stepClock, stepPhoton, stepTestBody, stepMass } from '../lib/physics'
 import { bodyRadiusApprox, distance } from '../lib/physics'
@@ -226,6 +227,7 @@ export function RelativityScene() {
       ) : null}
       {config.viewMode === 'firstPerson' ? <FirstPersonRig /> : null}
       <EffectsLayer />
+      <HUDPanel />
     </Canvas>
   )
 }

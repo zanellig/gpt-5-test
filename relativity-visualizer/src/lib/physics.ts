@@ -82,7 +82,7 @@ export function gravitationalPotential(point: Vector3Tuple, masses: MassBody[]):
 }
 
 // Update photon with Newtonian deflection approximation; speed maintained at C_SIM
-export function stepPhoton(photon: Photon, masses: MassBody[], dt: number, config?: SimConfig): Photon {
+export function stepPhoton(photon: Photon, masses: MassBody[], dt: number, _config?: SimConfig): Photon {
   const a = gravitationalAcceleration(photon.position, masses)
   let newVel = add(photon.velocity, scale(a, dt))
   // frame-dragging tweak
@@ -166,6 +166,56 @@ export function bodyRadiusApprox(m: MassBody): number {
 
 export function distance(a: Vector3Tuple, b: Vector3Tuple): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+}
+
+// Kerr radii (geometric sim units): r_horizon = M + sqrt(M^2 - a^2), r_static,eq = 2M
+export function kerrRadiiSim(mass: number, spinMagnitude: number) {
+  const M = Math.max(1e-6, mass)
+  const a = Math.max(0, Math.min(0.99, spinMagnitude))
+  const rPlus = M + Math.sqrt(Math.max(0, M * M - a * a))
+  const rStaticEquator = 2 * M
+  return { rPlus, rStaticEquator }
+}
+
+export interface OrbitalElements {
+  centralId?: string
+  semiMajorAxis?: number
+  eccentricity?: number
+  periapsis?: number
+  apoapsis?: number
+  isBound: boolean
+}
+
+// Approximate osculating elements relative to nearest massive body
+export function computeOrbitalElements(position: Vector3Tuple, velocity: Vector3Tuple, masses: MassBody[]): OrbitalElements {
+  if (masses.length === 0) return { isBound: false }
+  // choose nearest mass
+  let nearest = masses[0]
+  let bestD = distance(position, nearest.position)
+  for (let i = 1; i < masses.length; i++) {
+    const d = distance(position, masses[i].position)
+    if (d < bestD) { nearest = masses[i]; bestD = d }
+  }
+  const mu = G_SIM * nearest.mass
+  const rVec = subtract(position, nearest.position)
+  const vVec = subtract(velocity, nearest.velocity)
+  const r = Math.max(EPSILON, length(rVec))
+  const v2 = dot(vVec, vVec)
+  const h = cross(rVec, vVec)
+  // const h2 = dot(h, h) // not used currently but kept for potential inclination computations
+  if (mu <= 0 || r <= 0) return { isBound: false, centralId: nearest.id }
+  // eccentricity vector
+  const term1 = scale(cross(vVec, h), 1 / mu)
+  const rHat = scale(rVec, 1 / r)
+  const eVec = subtract(term1, rHat)
+  const e = Math.max(0, Math.min(0.9999, length(eVec)))
+  const energy = 0.5 * v2 - mu / r
+  const isBound = energy < 0
+  if (!isBound) return { isBound, centralId: nearest.id, eccentricity: e }
+  const a = -mu / (2 * energy)
+  const rp = a * (1 - e)
+  const ra = a * (1 + e)
+  return { centralId: nearest.id, semiMajorAxis: a, eccentricity: e, periapsis: rp, apoapsis: ra, isBound }
 }
 
 
