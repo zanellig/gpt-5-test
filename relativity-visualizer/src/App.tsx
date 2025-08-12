@@ -1,34 +1,61 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useEffect } from 'react'
+import { Leva, useControls, button } from 'leva'
+import { RelativityScene } from './scene/RelativityScene'
+import { useSimStore } from './state/store'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const addMass = useSimStore((s) => s.addMass)
+  const addPhoton = useSimStore((s) => s.addPhoton)
+  const addClock = useSimStore((s) => s.addClock)
+  const setPaused = useSimStore((s) => s.setPaused)
+  const setDt = useSimStore((s) => s.setDt)
+  const reset = useSimStore((s) => s.reset)
+
+  useEffect(() => {
+    // Seed initial scene
+    if (useSimStore.getState().masses.length === 0) {
+      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800' })
+      addClock({ position: [5, 0, 0], color: '#00ff88' })
+      addClock({ position: [10, 0, 0], color: '#ffffff' })
+    }
+  }, [])
+
+  useControls('Simulation', {
+    Pause: button(() => setPaused(true)),
+    Play: button(() => setPaused(false)),
+    'Reset Scene': button(() => {
+      reset()
+      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800' })
+      addClock({ position: [5, 0, 0], color: '#00ff88' })
+      addClock({ position: [10, 0, 0], color: '#ffffff' })
+    }),
+    'Time Step (dt)': {
+      value: 0.016,
+      min: 0.001,
+      max: 0.05,
+      step: 0.001,
+      onChange: (v: number) => setDt(v),
+    },
+    'Add Photon (left)': button(() => addPhoton({ position: [-15, 0, 0], velocity: [10, 0, 0] })),
+    'Add Photon (right)': button(() => addPhoton({ position: [15, 0, 0], velocity: [-10, 0, 0] })),
+    'Add Clock (random ring)': button(() => {
+      const r = 5 + Math.random() * 10
+      const a = Math.random() * Math.PI * 2
+      addClock({ position: [Math.cos(a) * r, 0, Math.sin(a) * r] })
+    }),
+    'Add Mass (planet)': button(() => {
+      const r = 4 + Math.random() * 8
+      const a = Math.random() * Math.PI * 2
+      addMass({ name: 'Planet', mass: 4 + Math.random() * 6, position: [Math.cos(a) * r, 0, Math.sin(a) * r], color: '#44bbff' })
+    }),
+  })
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div style={{ width: '100vw', height: '100vh' }}>
+      <RelativityScene />
+      <Leva collapsed oneLineLabels />
+    </div>
   )
 }
 
