@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, StatsGl, Sky, Environment } from '@react-three/drei'
+import { OrbitControls, Stats, Sky, Environment } from '@react-three/drei'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useSimStore } from '../state/store'
@@ -9,15 +9,16 @@ import { Photon } from '../components/Photon'
 import { Clock } from '../components/Clock'
 import { TestBody } from '../components/TestBody'
 import { DEFAULT_DT } from '../lib/constants'
-import { stepClock, stepPhoton, stepTestBody } from '../lib/physics'
+import { stepClock, stepPhoton, stepTestBody, stepMass } from '../lib/physics'
 
 function SimulationStepper() {
-  const { config, masses, photons, clocks, updatePhoton, updateClock, testBodies, updateTestBody, paused } = useSimStore((s) => ({
+  const { config, masses, photons, clocks, updateMass, updatePhoton, updateClock, testBodies, updateTestBody, paused } = useSimStore((s) => ({
     config: s.config,
     masses: s.masses,
     photons: s.photons,
     clocks: s.clocks,
     testBodies: s.testBodies,
+    updateMass: s.updateMass,
     updatePhoton: s.updatePhoton,
     updateClock: s.updateClock,
     updateTestBody: s.updateTestBody,
@@ -38,6 +39,10 @@ function SimulationStepper() {
       for (const c of clocks) {
         const next = stepClock(c, masses, step)
         updateClock(c.id, next)
+      }
+      for (const m of masses) {
+        const next = stepMass(m, step)
+        updateMass(m.id, next)
       }
       for (const b of testBodies) {
         const next = stepTestBody(b, masses, step)
@@ -113,7 +118,7 @@ export function RelativityScene() {
 
       <InteractionPlane />
       <OrbitControls makeDefault />
-      <StatsGl />
+      <Stats />
       <SimulationStepper />
     </Canvas>
   )

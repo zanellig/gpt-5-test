@@ -81,6 +81,20 @@ function App() {
       step: 0.5,
       onChange: (v: number) => updateMass(selected.id, { mass: v }),
     },
+    vx: {
+      value: selected.velocity[0],
+      min: -10,
+      max: 10,
+      step: 0.1,
+      onChange: (v: number) => updateMass(selected.id, { velocity: [v, selected.velocity[1], selected.velocity[2]] }),
+    },
+    vz: {
+      value: selected.velocity[2],
+      min: -10,
+      max: 10,
+      step: 0.1,
+      onChange: (v: number) => updateMass(selected.id, { velocity: [selected.velocity[0], selected.velocity[1], v] }),
+    },
     x: {
       value: selected.position[0],
       min: -20,

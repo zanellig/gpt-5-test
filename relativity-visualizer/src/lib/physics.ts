@@ -79,4 +79,9 @@ export function stepTestBody(body: TestBody, masses: MassBody[], dt: number): Te
   return { ...body, velocity: newVel, position: pos }
 }
 
+export function stepMass(body: MassBody, dt: number): MassBody {
+  const pos = add(body.position, scale(body.velocity, dt))
+  return { ...body, position: pos }
+}
+
 
