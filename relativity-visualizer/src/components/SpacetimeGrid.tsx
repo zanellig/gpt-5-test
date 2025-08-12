@@ -1,17 +1,16 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { GRID_RESOLUTION, GRID_SIZE, GRID_HEIGHT_SCALE, MAX_MASSES, FRAME_DRAG_SCALE } from '../lib/constants'
+import { GRID_RESOLUTION, GRID_SIZE, GRID_HEIGHT_SCALE, MAX_MASSES, G_SIM } from '../lib/constants'
 import type { MassBody } from '../state/store'
 
 const vertexShader = /* glsl */ `
 uniform int uMassCount;
 uniform vec3 uMassPos[${MAX_MASSES}];
 uniform float uMassVal[${MAX_MASSES}];
-uniform vec3 uMassSpin[${MAX_MASSES}];
 uniform float uHeightScale;
 uniform float uEpsilon;
-uniform float uTwistScale;
+uniform float uG;
 
 void main() {
   vec3 p = position;
@@ -19,23 +18,14 @@ void main() {
   vec3 worldP = (modelMatrix * vec4(p, 1.0)).xyz;
 
   float phi = 0.0;
-  vec3 twist = vec3(0.0);
   for (int i = 0; i < ${MAX_MASSES}; i++) {
     if (i >= uMassCount) break;
     vec3 d = uMassPos[i] - worldP;
     float r = length(d) + uEpsilon;
-    phi += -uMassVal[i] / r;
-    // frame-dragging-inspired azimuthal swirl
-    vec3 rhat = d / r;
-    vec3 shat = normalize(uMassSpin[i]);
-    vec3 tangential = normalize(cross(shat, rhat));
-    float invr2 = 1.0 / (r * r + 1e-3);
-    twist += tangential * (invr2 * uTwistScale * uMassVal[i] * length(uMassSpin[i]));
+    phi += -uG * uMassVal[i] / r;
   }
   // Displace along local Z, which maps to world Y after the mesh's -PI/2 X-rotation
   p.z += phi * uHeightScale;
-  // Apply small XY swirl offset to visualize frame dragging
-  p.xz += twist.xz * 0.25;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }
 `
@@ -52,10 +42,9 @@ export function SpacetimeGrid({ masses }: { masses: MassBody[] }) {
       uMassCount: { value: 0 },
       uMassPos: { value: Array.from({ length: MAX_MASSES }, () => new THREE.Vector3()) },
       uMassVal: { value: new Array(MAX_MASSES).fill(0) },
-      uMassSpin: { value: Array.from({ length: MAX_MASSES }, () => new THREE.Vector3()) },
       uHeightScale: { value: GRID_HEIGHT_SCALE },
       uEpsilon: { value: 0.25 },
-      uTwistScale: { value: FRAME_DRAG_SCALE },
+      uG: { value: G_SIM },
     }),
     []
   )
@@ -74,13 +63,10 @@ export function SpacetimeGrid({ masses }: { masses: MassBody[] }) {
       const m = masses[i]
       uniforms.uMassPos.value[i].set(m.position[0], m.position[1], m.position[2])
       uniforms.uMassVal.value[i] = m.mass
-      const s = m.spin ?? [0, 0, 0]
-      uniforms.uMassSpin.value[i].set(s[0], s[1], s[2])
     }
     for (let i = count; i < MAX_MASSES; i++) {
       uniforms.uMassPos.value[i].set(0, -9999, 0)
       uniforms.uMassVal.value[i] = 0
-      uniforms.uMassSpin.value[i].set(0, 0, 0)
     }
   })
 
