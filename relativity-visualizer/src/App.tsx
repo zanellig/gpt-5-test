@@ -11,6 +11,11 @@ function App() {
   const setPaused = useSimStore((s) => s.setPaused)
   const setDt = useSimStore((s) => s.setDt)
   const reset = useSimStore((s) => s.reset)
+  const uiMode = useSimStore((s) => s.uiMode)
+  const setUiMode = useSimStore((s) => s.setUiMode)
+  const masses = useSimStore((s) => s.masses)
+  const selectedMassId = useSimStore((s) => s.selectedMassId)
+  const updateMass = useSimStore((s) => s.updateMass)
 
   useEffect(() => {
     // Seed initial scene
@@ -50,6 +55,45 @@ function App() {
       addMass({ name: 'Planet', mass: 4 + Math.random() * 6, position: [Math.cos(a) * r, 0, Math.sin(a) * r], color: '#44bbff' })
     }),
   })
+
+  useControls('Modes', {
+    Mode: {
+      value: uiMode,
+      options: {
+        Select: 'select',
+        'Add Mass': 'addMass',
+        'Add Clock': 'addClock',
+        'Add Photon': 'addPhoton',
+      },
+      onChange: (v: any) => setUiMode(v),
+    },
+  })
+
+  const selected = masses.find((m) => m.id === selectedMassId)
+  useControls(selected ? `Selected: ${selected.name}` : 'Selected', selected ? {
+    name: { value: selected.name },
+    mass: {
+      value: selected.mass,
+      min: 0.5,
+      max: 50,
+      step: 0.5,
+      onChange: (v: number) => updateMass(selected.id, { mass: v }),
+    },
+    x: {
+      value: selected.position[0],
+      min: -20,
+      max: 20,
+      step: 0.1,
+      onChange: (v: number) => updateMass(selected.id, { position: [v, selected.position[1], selected.position[2]] }),
+    },
+    z: {
+      value: selected.position[2],
+      min: -20,
+      max: 20,
+      step: 0.1,
+      onChange: (v: number) => updateMass(selected.id, { position: [selected.position[0], selected.position[1], v] }),
+    },
+  } : {})
 
   return (
     <div style={{ width: '100vw', height: '100vh' }}>

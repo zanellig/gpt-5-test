@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, StatsGl, Sky, Grid, Environment } from '@react-three/drei'
+import { OrbitControls, StatsGl, Sky, Environment } from '@react-three/drei'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useSimStore } from '../state/store'
@@ -42,11 +42,38 @@ function SimulationStepper() {
   return null
 }
 
+function InteractionPlane() {
+  const addMass = useSimStore((s) => s.addMass)
+  const addClock = useSimStore((s) => s.addClock)
+  const addPhoton = useSimStore((s) => s.addPhoton)
+  const uiMode = useSimStore((s) => s.uiMode)
+  const setSelectedMassId = useSimStore((s) => s.setSelectedMassId)
+  const planeRef = useRef<THREE.Mesh>(null)
+
+  const handleClick = (e: any) => {
+    e.stopPropagation()
+    const p = e.point as THREE.Vector3
+    const pos: [number, number, number] = [p.x, 0, p.z]
+    if (uiMode === 'addMass') addMass({ position: pos })
+    else if (uiMode === 'addClock') addClock({ position: pos })
+    else if (uiMode === 'addPhoton') addPhoton({ position: pos })
+    else setSelectedMassId(undefined)
+  }
+
+  return (
+    <mesh ref={planeRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} onClick={handleClick}>
+      <planeGeometry args={[80, 80]} />
+      <meshBasicMaterial visible={false} />
+    </mesh>
+  )
+}
+
 export function RelativityScene() {
-  const { masses, photons, clocks } = useSimStore((s) => ({
+  const { masses, photons, clocks, setSelectedMassId } = useSimStore((s) => ({
     masses: s.masses,
     photons: s.photons,
     clocks: s.clocks,
+    setSelectedMassId: s.setSelectedMassId,
   }))
 
   const ambient = useMemo(() => new THREE.AmbientLight(0xffffff, 0.4), [])
@@ -62,7 +89,9 @@ export function RelativityScene() {
 
       <SpacetimeGrid masses={masses} />
       {masses.map((m) => (
-        <Mass key={m.id} body={m} />
+        <group key={m.id} onClick={(e) => { e.stopPropagation(); setSelectedMassId(m.id) }}>
+          <Mass body={m} />
+        </group>
       ))}
       {photons.map((p) => (
         <Photon key={p.id} photon={p} />
@@ -71,6 +100,7 @@ export function RelativityScene() {
         <Clock key={c.id} clock={c} />
       ))}
 
+      <InteractionPlane />
       <OrbitControls makeDefault />
       <StatsGl />
       <SimulationStepper />

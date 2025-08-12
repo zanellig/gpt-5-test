@@ -36,6 +36,8 @@ export interface SimState {
   masses: MassBody[]
   photons: Photon[]
   clocks: GravClock[]
+  uiMode: 'select' | 'addMass' | 'addClock' | 'addPhoton'
+  selectedMassId?: string
 
   addMass: (partial?: Partial<MassBody>) => string
   updateMass: (id: string, partial: Partial<MassBody>) => void
@@ -52,16 +54,21 @@ export interface SimState {
   setPaused: (paused: boolean) => void
   setDt: (dt: number) => void
   reset: () => void
+
+  setUiMode: (mode: SimState['uiMode']) => void
+  setSelectedMassId: (id?: string) => void
 }
 
 let idCounter = 0
 const nextId = () => `${++idCounter}`
 
-export const useSimStore = create<SimState>((set, get) => ({
+export const useSimStore = create<SimState>((set) => ({
   config: { dt: DEFAULT_DT, paused: false },
   masses: [],
   photons: [],
   clocks: [],
+  uiMode: 'select',
+  selectedMassId: undefined,
 
   addMass: (partial) => {
     const id = nextId()
@@ -126,6 +133,9 @@ export const useSimStore = create<SimState>((set, get) => ({
   setPaused: (paused) => set((s) => ({ config: { ...s.config, paused } })),
   setDt: (dt) => set((s) => ({ config: { ...s.config, dt } })),
   reset: () => set({ masses: [], photons: [], clocks: [] }),
+
+  setUiMode: (mode) => set({ uiMode: mode }),
+  setSelectedMassId: (id) => set({ selectedMassId: id }),
 }))
 
 
