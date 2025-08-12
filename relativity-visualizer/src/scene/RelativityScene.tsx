@@ -11,6 +11,7 @@ import { TestBody } from '../components/TestBody'
 import { BlackHole } from '../components/BlackHole'
 import { GravitationalWaves } from '../components/GravitationalWaves'
 import { FirstPersonRig } from '../components/FirstPersonRig'
+import { Trail } from '../components/Trails'
 import { DEFAULT_DT } from '../lib/constants'
 import { stepClock, stepPhoton, stepTestBody, stepMass } from '../lib/physics'
 
@@ -114,7 +115,12 @@ export function RelativityScene() {
         <Clock key={c.id} clock={c} />
       ))}
       {testBodies.map((b) => (
-        <TestBody key={b.id} body={b} />
+        <group key={b.id}>
+          <TestBody body={b} />
+          {config.precessionDemoEnabled ? (
+            <Trail color="#66ffaa" length={512} source={() => b.position} />
+          ) : null}
+        </group>
       ))}
 
       <InteractionPlane />
