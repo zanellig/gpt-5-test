@@ -86,19 +86,20 @@ function SimulationStepper() {
               momentum[2] / totalMass,
             ]
 
-            // Remove originals
-            removeMass(a.id)
-            removeMass(b.id)
 
-            // BH-BH -> BH + GW burst
+            // BH-BH -> BH + GW burst (remove originals and create merged BH)
             if (kindA === 'blackHole' && kindB === 'blackHole') {
+              removeMass(a.id)
+              removeMass(b.id)
               addMass({ name: 'BH Merger', mass: totalMass, position: pos, velocity: vMerged, color: '#ff9966', isBlackHole: true, spin: [0, (a.spin?.[1] ?? 0) + (b.spin?.[1] ?? 0), 0], kind: 'blackHole' })
               addEffect({ type: 'waveBurst', origin: pos, amplitude: 1, ttl: TTL_WAVEBURST })
               continue
             }
 
-            // NS-NS -> kilonova, outcome BH if above TOV
+            // NS-NS -> kilonova, outcome BH if above TOV (remove originals and create remnant)
             if (kindA === 'neutronStar' && kindB === 'neutronStar') {
+              removeMass(a.id)
+              removeMass(b.id)
               addEffect({ type: 'kilonova', origin: pos, ttl: TTL_KILONOVA })
               if (totalMass >= TOV_LIMIT_SIM) {
                 addMass({ name: 'BH (post-kilonova)', mass: totalMass, position: pos, velocity: vMerged, color: '#ff8844', isBlackHole: true, kind: 'blackHole' })
@@ -108,18 +109,23 @@ function SimulationStepper() {
               continue
             }
 
-            // BH - Star/Planet -> tidal disruption + accretion disk
+            // BH - Star/Planet -> tidal disruption + accretion disk (keep BH, remove the other; accrete mass)
             if ((kindA === 'blackHole' && (kindB === 'star' || kindB === 'planet')) || (kindB === 'blackHole' && (kindA === 'star' || kindA === 'planet'))) {
               const bh = kindA === 'blackHole' ? a : b
               const other = kindA === 'blackHole' ? b : a
-              // Keep BH, remove star/planet (already removed), create disk around BH and wave burst
+              removeMass(other.id)
+              const accreted = other.mass * 0.8
+              const newMass = bh.mass + accreted
+              const spinY = (bh.spin?.[1] ?? 0) + (other.spin?.[1] ?? 0) * 0.1
+              updateMass(bh.id, { mass: newMass, velocity: vMerged, position: bh.position, spin: [bh.spin?.[0] ?? 0, spinY, bh.spin?.[2] ?? 0] })
               addEffect({ type: 'accretionDisk', massId: bh.id, radius: Math.max(1, bodyRadiusApprox(other) * 3), ttl: TTL_ACCRETION })
-              addEffect({ type: 'waveBurst', origin: pos, amplitude: 0.5, ttl: TTL_WAVEBURST })
               continue
             }
 
             // Star-Star -> hotter larger star + explosion ejecta
             if ((kindA === 'star' && kindB === 'star')) {
+              removeMass(a.id)
+              removeMass(b.id)
               addMass({ name: 'Merged Star', mass: totalMass, position: pos, velocity: vMerged, color: '#ffd080', kind: 'star' })
               addEffect({ type: 'explosion', origin: pos, ttl: TTL_EXPLOSION })
               continue
@@ -128,6 +134,8 @@ function SimulationStepper() {
             // Planetary collisions -> merged body + debris ring
             if ((kindA === 'planet' && kindB === 'planet') || ((kindA === 'planet' && kindB === 'star') || (kindB === 'planet' && kindA === 'star'))) {
               const kind = (kindA === 'planet' && kindB === 'planet') ? 'planet' : 'star'
+              removeMass(a.id)
+              removeMass(b.id)
               const id = addMass({ name: kind === 'planet' ? 'Merged Planet' : 'Star Impact', mass: totalMass, position: pos, velocity: vMerged, color: kind === 'planet' ? '#88aaff' : '#ffbb66', kind })
               addEffect({ type: 'debrisRing', massId: id, inner: 0.8, outer: 1.6, ttl: TTL_DEBRIS })
               continue
