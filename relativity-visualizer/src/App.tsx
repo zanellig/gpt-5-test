@@ -71,7 +71,7 @@ function App() {
     }),
     'Precession Orbit (GR)': button(() => {
       reset()
-      const m = addMass({ name: 'Star', mass: 20, position: [0, 0, 0], color: '#ffaa00' })
+      addMass({ name: 'Star', mass: 20, position: [0, 0, 0], color: '#ffaa00' })
       const tb = addTestBody({ position: [10, 0, 0], velocity: [0, 0, 2.2], mass: 0.01, color: '#66ffaa', })
       // mark GR mode on the test body
       updateTestBody(tb, { useGR: true })
