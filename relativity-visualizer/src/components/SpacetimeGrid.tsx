@@ -13,14 +13,18 @@ uniform float uEpsilon;
 
 void main() {
   vec3 p = position;
+  // Compute world-space position of the current vertex for correct distance calculations
+  vec3 worldP = (modelMatrix * vec4(p, 1.0)).xyz;
+
   float phi = 0.0;
   for (int i = 0; i < ${MAX_MASSES}; i++) {
     if (i >= uMassCount) break;
-    vec3 d = uMassPos[i] - p;
+    vec3 d = uMassPos[i] - worldP;
     float r = length(d) + uEpsilon;
     phi += -uMassVal[i] / r;
   }
-  p.y += phi * uHeightScale;
+  // Displace along local Z, which maps to world Y after the mesh's -PI/2 X-rotation
+  p.z += phi * uHeightScale;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }
 `
@@ -38,7 +42,7 @@ export function SpacetimeGrid({ masses }: { masses: MassBody[] }) {
       uMassPos: { value: Array.from({ length: MAX_MASSES }, () => new THREE.Vector3()) },
       uMassVal: { value: new Array(MAX_MASSES).fill(0) },
       uHeightScale: { value: GRID_HEIGHT_SCALE },
-      uEpsilon: { value: 0.5 },
+      uEpsilon: { value: 0.25 },
     }),
     []
   )

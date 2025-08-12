@@ -11,7 +11,7 @@ export const MAX_SUBSTEPS = 4; // limit for stability
 // Visuals
 export const GRID_SIZE = 40; // world units
 export const GRID_RESOLUTION = 128; // segments per side (power of two preferred)
-export const GRID_HEIGHT_SCALE = 2.5; // multiplier for visual displacement from potential
+export const GRID_HEIGHT_SCALE = 1.25; // multiplier for visual displacement from potential
 
 export const MAX_MASSES = 16; // cap for shader uniform arrays
 
