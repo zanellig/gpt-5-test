@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { ThreeElements } from '@react-three/fiber'
+import type { ThreeElements } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { Photon as PhotonType } from '../state/store'
 
