@@ -1,4 +1,39 @@
-# React + TypeScript + Vite
+# Relativity Visualizer (React + Three.js + R3F)
+
+Interactive demonstrations of General Relativity concepts:
+
+- Curvature of spacetime: a shader-displaced grid based on gravitational potential from masses
+- Gravitational lensing: photons deflected by massive bodies (approximate)
+- Gravitational time dilation: clocks tick slower in deeper potentials (weak-field approx)
+
+## Tech
+
+- React + TypeScript (Vite)
+- three.js with @react-three/fiber and @react-three/drei
+- leva for UI controls
+- zustand for app state
+
+## Run
+
+```bash
+npm install
+npm run dev
+```
+
+Open the local URL printed by Vite.
+
+## Controls
+
+- Use the Leva panels:
+  - Simulation: Play/Pause, Reset, dt, spawn photons/clocks/masses
+  - Modes: Select, Add Mass/Clock/Photon; click the plane to place
+  - Selected: when a mass is selected, adjust mass and position
+
+## Notes
+
+- Physics uses scaled, approximate formulas for interactivity. Not numerically accurate GR.
+- Time dilation uses weak-field factor: sqrt(1 + 2 Phi / c^2).
+- Photons maintain constant speed and are redirected by gravitational acceleration.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
