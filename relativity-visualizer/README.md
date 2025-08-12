@@ -6,6 +6,14 @@ Interactive demonstrations of General Relativity concepts:
 - Gravitational lensing: photons deflected by massive bodies (approximate)
 - Gravitational time dilation: clocks tick slower in deeper potentials (weak-field approx)
 
+## New advanced features
+
+- Frame dragging (Lense–Thirring): masses can have a spin; the grid shows a swirl and trajectories experience a small drag.
+- Black hole visuals: toggle event horizon and ergosphere (Kerr-inspired).
+- Gravitational waves: enable a simple ring-wave visualization from binary inspiral sources.
+- Perihelion precession demo: enable GR-inspired precession and compare to Newtonian-like motion.
+- First-person observer: switch between god view and first-person; local HUD clock shows time dilation relative to a master clock.
+
 ## Tech
 
 - React + TypeScript (Vite)
@@ -28,6 +36,8 @@ Open the local URL printed by Vite.
   - Simulation: Play/Pause, Reset, dt, spawn photons/clocks/masses
   - Modes: Select, Add Mass/Clock/Photon; click the plane to place
   - Selected: when a mass is selected, adjust mass and position
+  - Additional: mark as black hole, adjust spin (Y axis), toggle visuals
+  - Global toggles: BH visuals, gravitational waves, precession demo, precession strength, view mode
 
 ## Notes
 

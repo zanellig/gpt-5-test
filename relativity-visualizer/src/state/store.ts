@@ -10,6 +10,10 @@ export interface MassBody {
   position: Vector3Tuple
   velocity: Vector3Tuple
   color?: string
+  // Dimensionless spin vector (Kerr a parameter direction). Magnitude clamped to [0, 0.99]
+  spin?: Vector3Tuple
+  // Render Kerr visuals (horizon/ergosphere)
+  isBlackHole?: boolean
 }
 
 export interface Photon {
@@ -25,6 +29,8 @@ export interface TestBody {
   velocity: Vector3Tuple
   mass: number
   color?: string
+  // For demos
+  useGR?: boolean
 }
 
 export interface GravClock {
@@ -37,6 +43,15 @@ export interface GravClock {
 export interface SimConfig {
   dt: number
   paused: boolean
+  // Camera/view
+  viewMode: 'god' | 'firstPerson'
+  lensingStrength: number
+  // Visual feature toggles
+  showBlackHoleVisuals: boolean
+  showGravitationalWaves: boolean
+  // Precession demo
+  precessionDemoEnabled: boolean
+  grPrecessionFactor: number
 }
 
 export interface SimState {
@@ -48,6 +63,7 @@ export interface SimState {
   uiMode: 'select' | 'addMass' | 'addClock' | 'addPhoton'
   selectedMassId?: string
   selectedTestBodyId?: string
+  observer?: { kind: 'mass' | 'testBody' | 'photon'; id: string }
 
   addMass: (partial?: Partial<MassBody>) => string
   updateMass: (id: string, partial: Partial<MassBody>) => void
@@ -67,6 +83,9 @@ export interface SimState {
 
   setPaused: (paused: boolean) => void
   setDt: (dt: number) => void
+  setViewMode: (mode: SimConfig['viewMode']) => void
+  setObserver: (observer?: { kind: 'mass' | 'testBody' | 'photon'; id: string }) => void
+  setConfig: (partial: Partial<SimConfig>) => void
   reset: () => void
 
   setUiMode: (mode: SimState['uiMode']) => void
@@ -78,7 +97,16 @@ let idCounter = 0
 const nextId = () => `${++idCounter}`
 
 export const useSimStore = create<SimState>((set) => ({
-  config: { dt: DEFAULT_DT, paused: false },
+  config: {
+    dt: DEFAULT_DT,
+    paused: false,
+    viewMode: 'god',
+    lensingStrength: 0.6,
+    showBlackHoleVisuals: true,
+    showGravitationalWaves: false,
+    precessionDemoEnabled: false,
+    grPrecessionFactor: 0.15,
+  },
   masses: [],
   photons: [],
   clocks: [],
@@ -86,6 +114,7 @@ export const useSimStore = create<SimState>((set) => ({
   uiMode: 'select',
   selectedMassId: undefined,
   selectedTestBodyId: undefined,
+  observer: undefined,
 
   addMass: (partial) => {
     const id = nextId()
@@ -96,6 +125,8 @@ export const useSimStore = create<SimState>((set) => ({
       position: partial?.position ?? [0, 0, 0],
       velocity: partial?.velocity ?? [0, 0, 0],
       color: partial?.color ?? '#ffaa00',
+      spin: partial?.spin ?? [0, 0.2, 0],
+      isBlackHole: partial?.isBlackHole ?? false,
     }
     set((s) => ({ masses: [...s.masses, mass] }))
     return id
@@ -165,7 +196,18 @@ export const useSimStore = create<SimState>((set) => ({
 
   setPaused: (paused) => set((s) => ({ config: { ...s.config, paused } })),
   setDt: (dt) => set((s) => ({ config: { ...s.config, dt } })),
-  reset: () => set({ masses: [], photons: [], clocks: [], testBodies: [], selectedMassId: undefined, selectedTestBodyId: undefined }),
+  setViewMode: (mode) => set((s) => ({ config: { ...s.config, viewMode: mode } })),
+  setObserver: (observer) => set({ observer }),
+  setConfig: (partial) => set((s) => ({ config: { ...s.config, ...partial } })),
+  reset: () => set({
+    masses: [],
+    photons: [],
+    clocks: [],
+    testBodies: [],
+    selectedMassId: undefined,
+    selectedTestBodyId: undefined,
+    observer: undefined,
+  }),
 
   setUiMode: (mode) => set({ uiMode: mode }),
   setSelectedMassId: (id) => set({ selectedMassId: id }),

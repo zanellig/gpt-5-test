@@ -20,4 +20,13 @@ export const DEFAULT_PHOTON_SPEED = C_SIM;
 
 export const EPSILON = 0.1; // softening length to avoid singularities
 
+// Kerr/Frame-dragging visualization params (stylized)
+export const MAX_SPIN = 0.99; // dimensionless Kerr a/M cap for visuals
+export const FRAME_DRAG_SCALE = 0.6; // scales the twist effect on the grid and test-body precession
+
+// Gravitational waves (stylized)
+export const GW_SPEED = C_SIM; // waves propagate at c
+export const GW_BASE_AMP = 0.15; // visual amplitude baseline
+export const GW_DAMPING = 0.02; // amplitude attenuation per unit distance
+
 

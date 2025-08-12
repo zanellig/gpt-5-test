@@ -13,17 +13,20 @@ function App() {
   const addTestBody = useSimStore((s) => s.addTestBody)
   const setPaused = useSimStore((s) => s.setPaused)
   const setDt = useSimStore((s) => s.setDt)
+  const setConfig = useSimStore((s) => s.setConfig)
+  const setViewMode = useSimStore((s) => s.setViewMode)
   const reset = useSimStore((s) => s.reset)
   const uiMode = useSimStore((s) => s.uiMode)
   const setUiMode = useSimStore((s) => s.setUiMode)
   const masses = useSimStore((s) => s.masses)
   const selectedMassId = useSimStore((s) => s.selectedMassId)
   const updateMass = useSimStore((s) => s.updateMass)
+  const config = useSimStore((s) => s.config)
 
   useEffect(() => {
     // Seed initial scene
     if (useSimStore.getState().masses.length === 0) {
-      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800' })
+      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800', isBlackHole: true, spin: [0, 0.6, 0] })
       addClock({ position: [5, 0, 0], color: '#00ff88' })
       addClock({ position: [10, 0, 0], color: '#ffffff' })
     }
@@ -34,7 +37,7 @@ function App() {
     Play: button(() => setPaused(false)),
     'Reset Scene': button(() => {
       reset()
-      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800' })
+      addMass({ name: 'Black Hole', mass: 20, position: [0, 0, 0], color: '#ff8800', isBlackHole: true, spin: [0, 0.6, 0] })
       addClock({ position: [5, 0, 0], color: '#00ff88' })
       addClock({ position: [10, 0, 0], color: '#ffffff' })
     }),
@@ -71,6 +74,30 @@ function App() {
       },
       onChange: (v: any) => setUiMode(v),
     },
+    View: {
+      value: config.viewMode,
+      options: { 'God View': 'god', 'First Person': 'firstPerson' },
+      onChange: (v: any) => setViewMode(v),
+    },
+    'Black Hole Visuals': {
+      value: config.showBlackHoleVisuals,
+      onChange: (v: boolean) => setConfig({ showBlackHoleVisuals: v }),
+    },
+    'Gravitational Waves': {
+      value: config.showGravitationalWaves,
+      onChange: (v: boolean) => setConfig({ showGravitationalWaves: v }),
+    },
+    'Precession Demo': {
+      value: config.precessionDemoEnabled,
+      onChange: (v: boolean) => setConfig({ precessionDemoEnabled: v }),
+    },
+    'GR Precession Factor': {
+      value: config.grPrecessionFactor,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: (v: number) => setConfig({ grPrecessionFactor: v }),
+    },
   })
 
   const selected = masses.find((m) => m.id === selectedMassId)
@@ -82,6 +109,17 @@ function App() {
       max: 50,
       step: 0.5,
       onChange: (v: number) => updateMass(selected.id, { mass: v }),
+    },
+    isBlackHole: {
+      value: selected.isBlackHole ?? false,
+      onChange: (v: boolean) => updateMass(selected.id, { isBlackHole: v }),
+    },
+    spinY: {
+      value: (selected.spin ?? [0, 0, 0])[1],
+      min: -0.99,
+      max: 0.99,
+      step: 0.01,
+      onChange: (v: number) => updateMass(selected.id, { spin: [selected.spin?.[0] ?? 0, v, selected.spin?.[2] ?? 0] }),
     },
     vx: {
       value: selected.velocity[0],

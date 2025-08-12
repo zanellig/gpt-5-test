@@ -8,6 +8,9 @@ import { Mass } from '../components/Mass'
 import { Photon } from '../components/Photon'
 import { Clock } from '../components/Clock'
 import { TestBody } from '../components/TestBody'
+import { BlackHole } from '../components/BlackHole'
+import { GravitationalWaves } from '../components/GravitationalWaves'
+import { FirstPersonRig } from '../components/FirstPersonRig'
 import { DEFAULT_DT } from '../lib/constants'
 import { stepClock, stepPhoton, stepTestBody, stepMass } from '../lib/physics'
 
@@ -31,7 +34,7 @@ function SimulationStepper() {
     const step = config.dt ?? DEFAULT_DT
     while (accumulator.current >= step) {
       for (const p of photons) {
-        const next = stepPhoton(p, masses, step)
+        const next = stepPhoton(p, masses, step, config)
         updatePhoton(p.id, next)
       }
       for (const c of clocks) {
@@ -43,7 +46,7 @@ function SimulationStepper() {
         updateMass(m.id, next)
       }
       for (const b of testBodies) {
-        const next = stepTestBody(b, masses, step)
+        const next = stepTestBody(b, masses, step, config)
         updateTestBody(b.id, next)
       }
       accumulator.current -= step
@@ -83,6 +86,7 @@ export function RelativityScene() {
   const photons = useSimStore((s) => s.photons)
   const clocks = useSimStore((s) => s.clocks)
   const testBodies = useSimStore((s) => s.testBodies)
+  const config = useSimStore((s) => s.config)
   const setSelectedMassId = useSimStore((s) => s.setSelectedMassId)
 
   const ambient = useMemo(() => new THREE.AmbientLight(0xffffff, 0.4), [])
@@ -100,6 +104,7 @@ export function RelativityScene() {
       {masses.map((m) => (
         <group key={m.id} onClick={(e) => { e.stopPropagation(); setSelectedMassId(m.id) }}>
           <Mass body={m} />
+          {config.showBlackHoleVisuals && m.isBlackHole ? <BlackHole body={m} /> : null}
         </group>
       ))}
       {photons.map((p) => (
@@ -113,9 +118,13 @@ export function RelativityScene() {
       ))}
 
       <InteractionPlane />
-      <OrbitControls makeDefault />
+      {config.viewMode === 'god' ? <OrbitControls makeDefault /> : null}
       <Stats />
       <SimulationStepper />
+      {config.showGravitationalWaves ? (
+        <GravitationalWaves sources={masses} enabled={config.showGravitationalWaves} />
+      ) : null}
+      {config.viewMode === 'firstPerson' ? <FirstPersonRig /> : null}
     </Canvas>
   )
 }
