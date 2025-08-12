@@ -4,6 +4,8 @@ import { RelativityScene } from './scene/RelativityScene'
 import { useSimStore } from './state/store'
 import './App.css'
 
+// Working implementation
+
 function App() {
   const addMass = useSimStore((s) => s.addMass)
   const addPhoton = useSimStore((s) => s.addPhoton)
