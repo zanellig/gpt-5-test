@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Stats, Sky, Environment } from '@react-three/drei'
+import { OrbitControls, Stats, Environment } from '@react-three/drei'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useSimStore } from '../state/store'
@@ -96,8 +96,8 @@ export function RelativityScene() {
     <Canvas camera={{ position: [10, 10, 10], fov: 50 }} shadows>
       <primitive object={ambient} />
       <primitive object={dir} position={[5, 10, 5]} />
-      <Sky sunPosition={[50, 50, 50]} />
-      <Environment preset="night" />
+      <color attach="background" args={["#000000"]} />
+      <Environment preset="night" background />
       <gridHelper args={[40, 40, 'white', '#444']} />
 
       <SpacetimeGrid masses={masses} />
