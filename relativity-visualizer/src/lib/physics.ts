@@ -137,9 +137,13 @@ export function stepTestBody(body: TestBody, masses: MassBody[], dt: number, con
   return { ...body, velocity: newVel, position: pos }
 }
 
-export function stepMass(body: MassBody, dt: number): MassBody {
-  const pos = add(body.position, scale(body.velocity, dt))
-  return { ...body, position: pos }
+export function stepMass(body: MassBody, masses: MassBody[], dt: number): MassBody {
+  // Exclude self for pairwise gravity
+  const others = masses.filter((m) => m.id !== body.id)
+  const a = gravitationalAcceleration(body.position, others)
+  const newVel = add(body.velocity, scale(a, dt))
+  const pos = add(body.position, scale(newVel, dt))
+  return { ...body, velocity: newVel, position: pos }
 }
 
 

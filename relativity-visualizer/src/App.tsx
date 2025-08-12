@@ -11,6 +11,7 @@ function App() {
   const addPhoton = useSimStore((s) => s.addPhoton)
   const addClock = useSimStore((s) => s.addClock)
   const addTestBody = useSimStore((s) => s.addTestBody)
+  const updateTestBody = useSimStore((s) => s.updateTestBody)
   const setPaused = useSimStore((s) => s.setPaused)
   const setDt = useSimStore((s) => s.setDt)
   const setConfig = useSimStore((s) => s.setConfig)
@@ -61,6 +62,21 @@ function App() {
       addMass({ name: 'Planet', mass: 4 + Math.random() * 6, position: [Math.cos(a) * r, 0, Math.sin(a) * r], color: '#44bbff' })
     }),
     'Add Test Body': button(() => addTestBody()),
+    'Spawn Inspiral (GW)': button(() => {
+      reset()
+      const id1 = addMass({ name: 'BH A', mass: 15, position: [-5, 0, 0], velocity: [0, 0, 1.2], color: '#ff8844', isBlackHole: true, spin: [0, 0.6, 0] })
+      const id2 = addMass({ name: 'BH B', mass: 12, position: [5, 0, 0], velocity: [0, 0, -1.2], color: '#ffcc55', isBlackHole: true, spin: [0, -0.4, 0] })
+      addClock({ position: [0, 0, 0], color: '#ffffff' })
+      setConfig({ showGravitationalWaves: true })
+    }),
+    'Precession Orbit (GR)': button(() => {
+      reset()
+      const m = addMass({ name: 'Star', mass: 20, position: [0, 0, 0], color: '#ffaa00' })
+      const tb = addTestBody({ position: [10, 0, 0], velocity: [0, 0, 2.2], mass: 0.01, color: '#66ffaa', })
+      // mark GR mode on the test body
+      updateTestBody(tb, { useGR: true })
+      setConfig({ precessionDemoEnabled: true })
+    }),
   })
 
   useControls('Modes', {

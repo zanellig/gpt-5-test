@@ -9,7 +9,7 @@ export function GravitationalWaves({ sources, enabled }: { sources: MassBody[]; 
   const ring = useRef<THREE.Mesh>(null)
   const t = useRef(0)
 
-  const geom = useMemo(() => new THREE.RingGeometry(0.1, 0.12, 128), [])
+  const geom = useMemo(() => new THREE.RingGeometry(1, 1.02, 256), [])
   const mat = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -23,23 +23,24 @@ export function GravitationalWaves({ sources, enabled }: { sources: MassBody[]; 
           uOrigin: { value: new THREE.Vector3(0, 0, 0) },
         },
         vertexShader: /* glsl */ `
-          varying vec2 vUv;
+          varying vec3 vWorld;
           void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorld = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
           }
         `,
         fragmentShader: /* glsl */ `
           uniform float uTime; uniform float uAmp; uniform float uDamp; uniform float uSpeed; uniform vec3 uOrigin;
-          varying vec2 vUv;
+          varying vec3 vWorld;
           void main(){
-            float r = length(vUv - vec2(0.5));
+            float r = distance(vWorld, uOrigin);
             float phase = uTime * uSpeed;
-            float k = 40.0;
-            float wave = sin(k * (r - phase));
-            float atten = max(0.0, 1.0 - r) * exp(-uDamp * r * 10.0);
+            float k = 2.0;
+            float wave = 0.5 + 0.5 * sin(k * (r - phase));
+            float atten = exp(-uDamp * r);
             float a = uAmp * wave * atten;
-            gl_FragColor = vec4(0.4, 0.8, 1.0, 0.2 + 0.3 * a);
+            gl_FragColor = vec4(0.4, 0.8, 1.0, clamp(a, 0.0, 0.5));
           }
         `,
       }),
@@ -59,13 +60,8 @@ export function GravitationalWaves({ sources, enabled }: { sources: MassBody[]; 
       mat.uniforms.uOrigin.value.copy(mid)
       if (ring.current) ring.current.position.copy(mid)
     }
-    const radius = t.current * GW_SPEED * 0.5
-    if (ring.current) {
-      ;(ring.current.geometry as THREE.RingGeometry).parameters.innerRadius = radius
-      ;(ring.current.geometry as THREE.RingGeometry).parameters.outerRadius = radius * 1.02
-      // Workaround: scale instead of rebuild
-      ring.current.scale.setScalar(1.005)
-    }
+    const radius = Math.max(0.1, t.current * GW_SPEED * 0.5)
+    if (ring.current) ring.current.scale.set(radius, 1, radius)
   })
 
   return enabled ? (

@@ -42,7 +42,7 @@ function SimulationStepper() {
         updateClock(c.id, next)
       }
       for (const m of masses) {
-        const next = stepMass(m, step)
+        const next = stepMass(m, masses, step)
         updateMass(m.id, next)
       }
       for (const b of testBodies) {
