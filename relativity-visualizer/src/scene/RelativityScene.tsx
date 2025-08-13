@@ -234,7 +234,7 @@ export function RelativityScene() {
       <Stats />
       <SimulationStepper />
       {config.showGravitationalWaves ? (
-        <GravitationalWaves sources={masses} enabled={config.showGravitationalWaves} />
+        <GravitationalWaves sources={masses} enabled={config.showGravitationalWaves} audioEnabled={config.gwAudioEnabled} />
       ) : null}
       {config.viewMode === 'firstPerson' ? <FirstPersonRig /> : null}
       <EffectsLayer />

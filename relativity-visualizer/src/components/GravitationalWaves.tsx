@@ -5,7 +5,7 @@ import { GW_BASE_AMP, GW_DAMPING, GW_SPEED } from '../lib/constants'
 import type { MassBody } from '../state/store'
 
 // Simple ring wavefronts expanding from a dynamic midpoint between two masses
-export function GravitationalWaves({ sources, enabled }: { sources: MassBody[]; enabled: boolean }) {
+export function GravitationalWaves({ sources, enabled, audioEnabled = false }: { sources: MassBody[]; enabled: boolean; audioEnabled?: boolean }) {
   const ring = useRef<THREE.Mesh>(null)
   const t = useRef(0)
   const osc = useRef<AudioContext | null>(null)
@@ -66,7 +66,7 @@ export function GravitationalWaves({ sources, enabled }: { sources: MassBody[]; 
       const sep = mid.distanceTo(new THREE.Vector3(a[0], a[1], a[2])) * 2
       const f = Math.max(20, Math.min(1200, 400 / Math.max(0.1, sep)))
       const amp = Math.max(0.02, Math.min(0.5, 0.2 / Math.max(0.2, sep)))
-      if (!osc.current) {
+      if (audioEnabled && !osc.current) {
         try {
           osc.current = new (window as any).AudioContext()
           gain.current = osc.current.createGain()
@@ -79,9 +79,12 @@ export function GravitationalWaves({ sources, enabled }: { sources: MassBody[]; 
           oscNode.current.start()
         } catch {}
       }
-      if (osc.current && oscNode.current && gain.current) {
+      if (audioEnabled && osc.current && oscNode.current && gain.current) {
         oscNode.current.frequency.setTargetAtTime(f, osc.current.currentTime, 0.05)
         gain.current.gain.setTargetAtTime(amp, osc.current.currentTime, 0.1)
+      } else if (!audioEnabled && osc.current && gain.current) {
+        // Fade out and close
+        gain.current.gain.setTargetAtTime(0, osc.current.currentTime, 0.1)
       }
     }
     const radius = Math.max(0.1, t.current * GW_SPEED * 0.5)
