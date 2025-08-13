@@ -41,21 +41,32 @@ function SimulationStepper() {
     accumulator.current += delta
     const step = config.dt ?? DEFAULT_DT
     while (accumulator.current >= step) {
-      for (const p of photons) {
-        const next = stepPhoton(p, masses, step, config)
-        updatePhoton(p.id, next)
-      }
-      for (const c of clocks) {
-        const next = stepClock(c, masses, step)
-        updateClock(c.id, next)
-      }
-      for (const m of masses) {
-        const next = stepMass(m, masses, step)
-        updateMass(m.id, next)
-      }
-      for (const b of testBodies) {
-        const next = stepTestBody(b, masses, step, config)
-        updateTestBody(b.id, next)
+      // Adaptive substeps based on max displacement heuristic
+      let maxSpeed = 0
+      for (const m of masses) { const s = Math.hypot(m.velocity[0], m.velocity[1], m.velocity[2]); if (s > maxSpeed) maxSpeed = s }
+      for (const b of testBodies) { const s = Math.hypot(b.velocity[0], b.velocity[1], b.velocity[2]); if (s > maxSpeed) maxSpeed = s }
+      if (photons.length > 0) { if (10 > maxSpeed) maxSpeed = 10 } // C_SIM is 10
+      const maxDx = 1.5
+      const desired = maxSpeed * step / maxDx
+      const substeps = config.adaptiveTimestep ? Math.max(1, Math.min(config.maxSubsteps || 1, Math.ceil(desired))) : 1
+      const h = step / substeps
+      for (let s = 0; s < substeps; s++) {
+        for (const p of photons) {
+          const next = stepPhoton(p, masses, h, config)
+          updatePhoton(p.id, next)
+        }
+        for (const c of clocks) {
+          const next = stepClock(c, masses, h, config.enableSR)
+          updateClock(c.id, next)
+        }
+        for (const m of masses) {
+          const next = stepMass(m, masses, h, config)
+          updateMass(m.id, next)
+        }
+        for (const b of testBodies) {
+          const next = stepTestBody(b, masses, h, config)
+          updateTestBody(b.id, next)
+        }
       }
       // After integration step, check collisions among masses
       for (let i = 0; i < masses.length; i++) {

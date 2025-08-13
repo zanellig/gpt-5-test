@@ -8,6 +8,9 @@ import type { MassBody } from '../state/store'
 export function GravitationalWaves({ sources, enabled }: { sources: MassBody[]; enabled: boolean }) {
   const ring = useRef<THREE.Mesh>(null)
   const t = useRef(0)
+  const osc = useRef<AudioContext | null>(null)
+  const gain = useRef<GainNode | null>(null)
+  const oscNode = useRef<OscillatorNode | null>(null)
 
   const geom = useMemo(() => new THREE.RingGeometry(1, 1.02, 256), [])
   const mat = useMemo(
@@ -59,6 +62,27 @@ export function GravitationalWaves({ sources, enabled }: { sources: MassBody[]; 
       const mid = new THREE.Vector3((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2)
       mat.uniforms.uOrigin.value.copy(mid)
       if (ring.current) ring.current.position.copy(mid)
+      // Simple chirp proxy using separation
+      const sep = mid.distanceTo(new THREE.Vector3(a[0], a[1], a[2])) * 2
+      const f = Math.max(20, Math.min(1200, 400 / Math.max(0.1, sep)))
+      const amp = Math.max(0.02, Math.min(0.5, 0.2 / Math.max(0.2, sep)))
+      if (!osc.current) {
+        try {
+          osc.current = new (window as any).AudioContext()
+          gain.current = osc.current.createGain()
+          gain.current.gain.value = 0
+          oscNode.current = osc.current.createOscillator()
+          oscNode.current.type = 'sine'
+          oscNode.current.frequency.value = f
+          oscNode.current.connect(gain.current)
+          gain.current.connect(osc.current.destination)
+          oscNode.current.start()
+        } catch {}
+      }
+      if (osc.current && oscNode.current && gain.current) {
+        oscNode.current.frequency.setTargetAtTime(f, osc.current.currentTime, 0.05)
+        gain.current.gain.setTargetAtTime(amp, osc.current.currentTime, 0.1)
+      }
     }
     const radius = Math.max(0.1, t.current * GW_SPEED * 0.5)
     if (ring.current) ring.current.scale.set(radius, 1, radius)

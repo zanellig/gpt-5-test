@@ -26,6 +26,10 @@ export function dot(a: Vector3Tuple, b: Vector3Tuple): number {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 
+export function clamp(x: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, x))
+}
+
 // Gravitational acceleration from a set of masses at a given point
 export function gravitationalAcceleration(point: Vector3Tuple, masses: MassBody[]): Vector3Tuple {
   let ax = 0, ay = 0, az = 0
@@ -40,6 +44,53 @@ export function gravitationalAcceleration(point: Vector3Tuple, masses: MassBody[
     ax += dx * factor
     ay += dy * factor
     az += dz * factor
+  }
+  return [ax, ay, az]
+}
+
+// Special-relativistic gamma factor from velocity magnitude
+export function gammaForVelocity(velocity: Vector3Tuple): number {
+  const v2 = dot(velocity, velocity)
+  const beta2 = v2 / (C_SIM * C_SIM)
+  const clamped = Math.max(0, Math.min(0.999999, beta2))
+  return 1 / Math.sqrt(1 - clamped)
+}
+
+// Combined GR (weak-field) and SR time dilation factor dτ/dt
+export function combinedTimeDilation(point: Vector3Tuple, velocity: Vector3Tuple | undefined, masses: MassBody[], enableSR: boolean): number {
+  const grav = timeDilationFactor(point, masses)
+  if (!enableSR || !velocity) return grav
+  const gamma = gammaForVelocity(velocity)
+  return grav / gamma
+}
+
+// 1PN correction term (simplified) for test bodies relative to a single mass.
+// Uses a compact form that produces perihelion advance without full tensor.
+function onePNCorrectionSingle(rVec: Vector3Tuple, v: Vector3Tuple, mass: number): Vector3Tuple {
+  const r = Math.max(EPSILON, length(rVec))
+  const rHat = scale(rVec, 1 / r)
+  const v2 = dot(v, v)
+  const mu = G_SIM * mass
+  const rsOverR = (2 * mu) / (C_SIM * C_SIM * r)
+  const radialAccelMag = mu / (r * r)
+  // Radial correction ~ (1 + 3 rs/r + v^2/c^2)
+  const radialMag = radialAccelMag * (3 * rsOverR + v2 / (C_SIM * C_SIM))
+  // Tangential correction to induce precession: along t-hat
+  const h = cross(rVec, v)
+  const Lhat = normalize(h)
+  const tHat = normalize(cross(Lhat, rHat))
+  const tangentialMag = radialAccelMag * rsOverR
+  return add(scale(rHat, radialMag), scale(tHat, tangentialMag))
+}
+
+export function onePNAcceleration(point: Vector3Tuple, velocity: Vector3Tuple, masses: MassBody[]): Vector3Tuple {
+  let ax = 0, ay = 0, az = 0
+  for (const m of masses) {
+    const rVec = subtract(point, m.position)
+    const corr = onePNCorrectionSingle(rVec, subtract(velocity, m.velocity), m.mass)
+    ax += -corr[0]
+    ay += -corr[1]
+    az += -corr[2]
   }
   return [ax, ay, az]
 }
@@ -82,16 +133,28 @@ export function gravitationalPotential(point: Vector3Tuple, masses: MassBody[]):
 }
 
 // Update photon with Newtonian deflection approximation; speed maintained at C_SIM
-export function stepPhoton(photon: Photon, masses: MassBody[], dt: number, _config?: SimConfig): Photon {
-  const a = gravitationalAcceleration(photon.position, masses)
-  let newVel = add(photon.velocity, scale(a, dt))
+export function stepPhoton(photon: Photon, masses: MassBody[], dt: number, config?: SimConfig): Photon {
+  // Acceleration perpendicular to velocity gives deflection; project out parallel component
+  const aNewton = gravitationalAcceleration(photon.position, masses)
+  const vHat = normalize(photon.velocity)
+  const aParallelMag = dot(aNewton, vHat)
+  const aPerp = subtract(aNewton, scale(vHat, aParallelMag))
+  let newVel = add(photon.velocity, scale(aPerp, dt))
   // frame-dragging tweak
   const dVfd = frameDraggingDeltaV(photon.position, newVel, masses, dt)
   newVel = add(newVel, dVfd)
+  // Maintain |v| = c
   const dir = normalize(newVel)
-  const vel = scale(dir, C_SIM)
-  const pos = add(photon.position, scale(vel, dt))
-  return { ...photon, velocity: vel, position: pos }
+  const speed = C_SIM
+  const vel = scale(dir, speed)
+  // Shapiro-like delay: slow coordinate advance in deeper potential
+  const phi = gravitationalPotential(photon.position, masses)
+  const shapiro = 1 + Math.max(-0.5, Math.min(0.5, -2 * phi / (C_SIM * C_SIM)))
+  const pos = add(photon.position, scale(vel, dt / shapiro))
+  // Frequency shift from gravitational potential (local redshift proxy)
+  const gravFactor = Math.sqrt(Math.max(0.05, 1 + (2 * phi) / (C_SIM * C_SIM)))
+  const nextFreq = (photon.frequency ?? 1.0) * gravFactor
+  return { ...photon, velocity: vel, position: pos, frequency: nextFreq }
 }
 
 // Gravitational time dilation factor using weak-field approximation: sqrt(1 + 2 Phi / c^2)
@@ -101,16 +164,18 @@ export function timeDilationFactor(point: Vector3Tuple, masses: MassBody[]): num
   return factor
 }
 
-export function stepClock(clock: GravClock, masses: MassBody[], dt: number): GravClock {
-  const factor = timeDilationFactor(clock.position, masses)
+export function stepClock(clock: GravClock, masses: MassBody[], dt: number, enableSR = true): GravClock {
+  const factor = combinedTimeDilation(clock.position, clock.velocity, masses, enableSR)
   return { ...clock, properTime: clock.properTime + dt * factor }
 }
 
 export function stepTestBody(body: TestBody, masses: MassBody[], dt: number, config?: SimConfig): TestBody {
+  const enable1PN = !!config?.enable1PN
   let a = gravitationalAcceleration(body.position, masses)
-  // GR-inspired perihelion precession correction (stylized)
-  const useGR = (body as any).useGR === true
-  if (useGR && config?.precessionDemoEnabled) {
+  if (enable1PN) {
+    a = add(a, onePNAcceleration(body.position, body.velocity, masses))
+  } else if (config?.precessionDemoEnabled && (body as any).useGR === true) {
+    // legacy tangential tweak
     let axT = 0, ayT = 0, azT = 0
     for (const m of masses) {
       const rVec: Vector3Tuple = subtract(body.position, m.position)
@@ -119,7 +184,6 @@ export function stepTestBody(body: TestBody, masses: MassBody[], dt: number, con
       const L = cross(rVec, body.velocity)
       const Lhat = normalize(L)
       const tHat = normalize(cross(Lhat, rHat))
-      // scale ~ (GM/c^2) * (GM/r^3)
       const rs = 2 * G_SIM * m.mass / (C_SIM * C_SIM)
       const mag = (config?.grPrecessionFactor ?? 0.1) * (G_SIM * m.mass / (r * r)) * (rs / r)
       axT += tHat[0] * mag
@@ -134,13 +198,18 @@ export function stepTestBody(body: TestBody, masses: MassBody[], dt: number, con
   let newVel = add(body.velocity, dVfd)
   newVel = add(newVel, scale(a, dt))
   const pos = add(body.position, scale(newVel, dt))
-  return { ...body, velocity: newVel, position: pos }
+  // Proper time update on body if tracked
+  const properTime = (body.properTime ?? 0) + dt * combinedTimeDilation(pos, newVel, masses, !!config?.enableSR)
+  return { ...body, velocity: newVel, position: pos, properTime }
 }
 
-export function stepMass(body: MassBody, masses: MassBody[], dt: number): MassBody {
+export function stepMass(body: MassBody, masses: MassBody[], dt: number, config?: SimConfig): MassBody {
   // Exclude self for pairwise gravity
   const others = masses.filter((m) => m.id !== body.id)
-  const a = gravitationalAcceleration(body.position, others)
+  let a = gravitationalAcceleration(body.position, others)
+  if (config?.enable1PN) {
+    a = add(a, onePNAcceleration(body.position, body.velocity, others))
+  }
   const newVel = add(body.velocity, scale(a, dt))
   const pos = add(body.position, scale(newVel, dt))
   return { ...body, velocity: newVel, position: pos }

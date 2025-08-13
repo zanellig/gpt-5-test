@@ -23,6 +23,8 @@ export interface Photon {
   position: Vector3Tuple
   velocity: Vector3Tuple // magnitude maintained at C_SIM
   color?: string
+  // Render/physics frequency proxy (unitless). Used for Doppler/redshift coloring.
+  frequency?: number
 }
 
 export interface TestBody {
@@ -33,6 +35,8 @@ export interface TestBody {
   color?: string
   // For demos
   useGR?: boolean
+  // Proper time accumulator for SR/GR display
+  properTime?: number
 }
 
 export interface GravClock {
@@ -40,6 +44,8 @@ export interface GravClock {
   position: Vector3Tuple
   properTime: number
   color?: string
+  // Optional kinematic velocity for SR dilation; if absent, treated as stationary
+  velocity?: Vector3Tuple
 }
 
 export interface SimConfig {
@@ -54,6 +60,13 @@ export interface SimConfig {
   // Precession demo
   precessionDemoEnabled: boolean
   grPrecessionFactor: number
+  // Physics toggles
+  enableSR: boolean
+  enable1PN: boolean
+  adaptiveTimestep: boolean
+  maxSubsteps: number
+  // Audio
+  gwAudioEnabled: boolean
 }
 
 export interface SimState {
@@ -133,6 +146,11 @@ export const useSimStore = create<SimState>((set) => ({
     showGravitationalWaves: false,
     precessionDemoEnabled: false,
     grPrecessionFactor: 0.15,
+    enableSR: true,
+    enable1PN: true,
+    adaptiveTimestep: true,
+    maxSubsteps: 4,
+    gwAudioEnabled: false,
   },
   masses: [],
   photons: [],
@@ -177,6 +195,7 @@ export const useSimStore = create<SimState>((set) => ({
       position: partial?.position ?? [-10, 0, 0],
       velocity,
       color: partial?.color ?? '#66ccff',
+      frequency: partial?.frequency ?? 1.0,
     }
     set((s) => ({ photons: [...s.photons, photon] }))
     return id
@@ -196,6 +215,7 @@ export const useSimStore = create<SimState>((set) => ({
       position: partial?.position ?? [0, 0, 0],
       properTime: partial?.properTime ?? 0,
       color: partial?.color ?? '#ffffff',
+      velocity: partial?.velocity,
     }
     set((s) => ({ clocks: [...s.clocks, clock] }))
     return id
@@ -216,6 +236,7 @@ export const useSimStore = create<SimState>((set) => ({
       position: partial?.position ?? [-10, 0, 0],
       velocity: partial?.velocity ?? [5, 0, 0],
       color: partial?.color ?? '#aaff66',
+      properTime: 0,
     }
     set((s) => ({ testBodies: [...s.testBodies, body] }))
     return id
