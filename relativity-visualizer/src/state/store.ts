@@ -76,9 +76,11 @@ export interface SimState {
   clocks: GravClock[]
   testBodies: TestBody[]
   effects: Effect[]
-  uiMode: 'select' | 'addMass' | 'addClock' | 'addPhoton'
+  uiMode: 'select' | 'addMass' | 'addClock' | 'addPhoton' | 'addTestBody'
   selectedMassId?: string
   selectedTestBodyId?: string
+  selectedPhotonId?: string
+  selectedClockId?: string
   observer?: { kind: 'mass' | 'testBody' | 'photon'; id: string }
 
   addMass: (partial?: Partial<MassBody>) => string
@@ -107,6 +109,8 @@ export interface SimState {
   setUiMode: (mode: SimState['uiMode']) => void
   setSelectedMassId: (id?: string) => void
   setSelectedTestBodyId: (id?: string) => void
+  setSelectedPhotonId: (id?: string) => void
+  setSelectedClockId: (id?: string) => void
   addEffect: (e: EffectInput) => string
   removeEffect: (id: string) => void
 }
@@ -160,6 +164,8 @@ export const useSimStore = create<SimState>((set) => ({
   uiMode: 'select',
   selectedMassId: undefined,
   selectedTestBodyId: undefined,
+  selectedPhotonId: undefined,
+  selectedClockId: undefined,
   observer: undefined,
 
   addMass: (partial) => {
@@ -258,12 +264,16 @@ export const useSimStore = create<SimState>((set) => ({
     effects: [],
     selectedMassId: undefined,
     selectedTestBodyId: undefined,
+    selectedPhotonId: undefined,
+    selectedClockId: undefined,
     observer: undefined,
   }),
 
   setUiMode: (mode) => set({ uiMode: mode }),
   setSelectedMassId: (id) => set({ selectedMassId: id }),
   setSelectedTestBodyId: (id) => set({ selectedTestBodyId: id }),
+  setSelectedPhotonId: (id) => set({ selectedPhotonId: id }),
+  setSelectedClockId: (id) => set({ selectedClockId: id }),
   addEffect: (e) => {
     const id = nextId()
     const eff: Effect = { ...(e as any), id, createdAt: performance.now() }

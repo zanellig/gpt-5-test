@@ -166,8 +166,12 @@ function InteractionPlane() {
   const addMass = useSimStore((s) => s.addMass)
   const addClock = useSimStore((s) => s.addClock)
   const addPhoton = useSimStore((s) => s.addPhoton)
+  const addTestBody = useSimStore((s) => s.addTestBody)
   const uiMode = useSimStore((s) => s.uiMode)
   const setSelectedMassId = useSimStore((s) => s.setSelectedMassId)
+  const setSelectedPhotonId = useSimStore((s) => s.setSelectedPhotonId)
+  const setSelectedClockId = useSimStore((s) => s.setSelectedClockId)
+  const setSelectedTestBodyId = useSimStore((s) => s.setSelectedTestBodyId)
   const planeRef = useRef<THREE.Mesh>(null)
 
   const handleClick = (e: any) => {
@@ -177,7 +181,13 @@ function InteractionPlane() {
     if (uiMode === 'addMass') addMass({ position: pos })
     else if (uiMode === 'addClock') addClock({ position: pos })
     else if (uiMode === 'addPhoton') addPhoton({ position: pos })
-    else setSelectedMassId(undefined)
+    else if (uiMode === 'addTestBody') addTestBody({ position: pos })
+    else {
+      setSelectedMassId(undefined)
+      setSelectedPhotonId(undefined)
+      setSelectedClockId(undefined)
+      setSelectedTestBodyId(undefined)
+    }
   }
 
   return (
@@ -195,6 +205,9 @@ export function RelativityScene() {
   const testBodies = useSimStore((s) => s.testBodies)
   const config = useSimStore((s) => s.config)
   const setSelectedMassId = useSimStore((s) => s.setSelectedMassId)
+  const setSelectedPhotonId = useSimStore((s) => s.setSelectedPhotonId)
+  const setSelectedClockId = useSimStore((s) => s.setSelectedClockId)
+  const setSelectedTestBodyId = useSimStore((s) => s.setSelectedTestBodyId)
 
   const ambient = useMemo(() => new THREE.AmbientLight(0xffffff, 0.4), [])
   const dir = useMemo(() => new THREE.DirectionalLight(0xffffff, 1.0), [])
@@ -209,19 +222,23 @@ export function RelativityScene() {
 
       <SpacetimeGrid masses={masses} />
       {masses.map((m) => (
-        <group key={m.id} onClick={(e) => { e.stopPropagation(); setSelectedMassId(m.id) }}>
+        <group key={m.id} onClick={(e) => { e.stopPropagation(); setSelectedMassId(m.id); setSelectedPhotonId(undefined); setSelectedClockId(undefined); setSelectedTestBodyId(undefined) }}>
           <Mass body={m} />
           {config.showBlackHoleVisuals && m.isBlackHole ? <BlackHole body={m} /> : null}
         </group>
       ))}
       {photons.map((p) => (
-        <Photon key={p.id} photon={p} />
+        <group key={p.id} onClick={(e) => { e.stopPropagation(); setSelectedPhotonId(p.id); setSelectedMassId(undefined); setSelectedClockId(undefined); setSelectedTestBodyId(undefined) }}>
+          <Photon photon={p} />
+        </group>
       ))}
       {clocks.map((c) => (
-        <Clock key={c.id} clock={c} />
+        <group key={c.id} onClick={(e) => { e.stopPropagation(); setSelectedClockId(c.id); setSelectedMassId(undefined); setSelectedPhotonId(undefined); setSelectedTestBodyId(undefined) }}>
+          <Clock clock={c} />
+        </group>
       ))}
       {testBodies.map((b) => (
-        <group key={b.id}>
+        <group key={b.id} onClick={(e) => { e.stopPropagation(); setSelectedTestBodyId(b.id); setSelectedMassId(undefined); setSelectedPhotonId(undefined); setSelectedClockId(undefined) }}>
           <TestBody body={b} />
           {config.precessionDemoEnabled ? (
             <Trail color="#66ffaa" length={512} source={() => b.position} />

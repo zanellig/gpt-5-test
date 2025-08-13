@@ -12,6 +12,8 @@ function App() {
   const addClock = useSimStore((s) => s.addClock)
   const addTestBody = useSimStore((s) => s.addTestBody)
   const updateTestBody = useSimStore((s) => s.updateTestBody)
+  const updatePhoton = useSimStore((s) => s.updatePhoton)
+  const updateClock = useSimStore((s) => s.updateClock)
   const setPaused = useSimStore((s) => s.setPaused)
   const setDt = useSimStore((s) => s.setDt)
   const setConfig = useSimStore((s) => s.setConfig)
@@ -21,6 +23,9 @@ function App() {
   const setUiMode = useSimStore((s) => s.setUiMode)
   const masses = useSimStore((s) => s.masses)
   const selectedMassId = useSimStore((s) => s.selectedMassId)
+  const selectedPhotonId = useSimStore((s) => s.selectedPhotonId)
+  const selectedClockId = useSimStore((s) => s.selectedClockId)
+  const selectedTestBodyId = useSimStore((s) => s.selectedTestBodyId)
   const updateMass = useSimStore((s) => s.updateMass)
   const config = useSimStore((s) => s.config)
 
@@ -87,6 +92,7 @@ function App() {
         'Add Mass': 'addMass',
         'Add Clock': 'addClock',
         'Add Photon': 'addPhoton',
+        'Add Test Body': 'addTestBody',
       },
       onChange: (v: any) => setUiMode(v),
     },
@@ -117,6 +123,9 @@ function App() {
   })
 
   const selected = masses.find((m) => m.id === selectedMassId)
+  const selPhoton = useSimStore((s) => s.photons.find((p) => p.id === selectedPhotonId))
+  const selClock = useSimStore((s) => s.clocks.find((c) => c.id === selectedClockId))
+  const selBody = useSimStore((s) => s.testBodies.find((b) => b.id === selectedTestBodyId))
   useControls(selected ? `Selected: ${selected.name}` : 'Selected', selected ? {
     name: { value: selected.name },
     mass: {
@@ -165,6 +174,40 @@ function App() {
       step: 0.1,
       onChange: (v: number) => updateMass(selected.id, { position: [selected.position[0], selected.position[1], v] }),
     },
+  } : {})
+
+  useControls(selPhoton ? `Selected: Photon ${selPhoton.id}` : 'Photon', selPhoton ? {
+    color: {
+      value: selPhoton.color ?? '#66ccff',
+      onChange: (v: string) => updatePhoton(selPhoton.id, { color: v }),
+    },
+    freq: {
+      value: selPhoton.frequency ?? 1,
+      min: 0.2,
+      max: 5,
+      step: 0.01,
+      onChange: (v: number) => updatePhoton(selPhoton.id, { frequency: v }),
+    },
+    vx: { value: selPhoton.velocity[0], min: -10, max: 10, step: 0.1, onChange: (v: number) => updatePhoton(selPhoton.id, { velocity: [v, selPhoton.velocity[1], selPhoton.velocity[2]] }) },
+    vz: { value: selPhoton.velocity[2], min: -10, max: 10, step: 0.1, onChange: (v: number) => updatePhoton(selPhoton.id, { velocity: [selPhoton.velocity[0], selPhoton.velocity[1], v] }) },
+    x:  { value: selPhoton.position[0], min: -40, max: 40, step: 0.1, onChange: (v: number) => updatePhoton(selPhoton.id, { position: [v, selPhoton.position[1], selPhoton.position[2]] }) },
+    z:  { value: selPhoton.position[2], min: -40, max: 40, step: 0.1, onChange: (v: number) => updatePhoton(selPhoton.id, { position: [selPhoton.position[0], selPhoton.position[1], v] }) },
+  } : {})
+
+  useControls(selClock ? `Selected: Clock ${selClock.id}` : 'Clock', selClock ? {
+    color: { value: selClock.color ?? '#ffffff', onChange: (v: string) => updateClock(selClock.id, { color: v }) },
+    x:  { value: selClock.position[0], min: -40, max: 40, step: 0.1, onChange: (v: number) => updateClock(selClock.id, { position: [v, selClock.position[1], selClock.position[2]] }) },
+    z:  { value: selClock.position[2], min: -40, max: 40, step: 0.1, onChange: (v: number) => updateClock(selClock.id, { position: [selClock.position[0], selClock.position[1], v] }) },
+  } : {})
+
+  useControls(selBody ? `Selected: TestBody ${selBody.id}` : 'Test Body', selBody ? {
+    mass: { value: selBody.mass, min: 0.001, max: 10, step: 0.001, onChange: (v: number) => updateTestBody(selBody.id, { mass: v }) },
+    color: { value: selBody.color ?? '#aaff66', onChange: (v: string) => updateTestBody(selBody.id, { color: v }) },
+    vx: { value: selBody.velocity[0], min: -10, max: 10, step: 0.1, onChange: (v: number) => updateTestBody(selBody.id, { velocity: [v, selBody.velocity[1], selBody.velocity[2]] }) },
+    vz: { value: selBody.velocity[2], min: -10, max: 10, step: 0.1, onChange: (v: number) => updateTestBody(selBody.id, { velocity: [selBody.velocity[0], selBody.velocity[1], v] }) },
+    x:  { value: selBody.position[0], min: -40, max: 40, step: 0.1, onChange: (v: number) => updateTestBody(selBody.id, { position: [v, selBody.position[1], selBody.position[2]] }) },
+    z:  { value: selBody.position[2], min: -40, max: 40, step: 0.1, onChange: (v: number) => updateTestBody(selBody.id, { position: [selBody.position[0], selBody.position[1], v] }) },
+    useGR: { value: selBody.useGR ?? false, onChange: (v: boolean) => updateTestBody(selBody.id, { useGR: v }) },
   } : {})
 
   return (
