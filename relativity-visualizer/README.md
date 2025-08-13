@@ -1,25 +1,46 @@
 # Relativity Visualizer (React + Three.js + R3F)
 
-Interactive demonstrations of General Relativity concepts:
+Interactive simulation of General Relativity concepts with real‑time visuals and controls.
 
-- Curvature of spacetime: a shader-displaced grid based on gravitational potential from masses
-- Gravitational lensing: photons deflected by massive bodies (approximate)
-- Gravitational time dilation: clocks tick slower in deeper potentials (weak-field approx)
+## Core features
 
-## New advanced features
+- Curved spacetime grid: shader-displaced plane using gravitational potential from masses.
+- Photon deflection (gravitational lensing, approximate): photons travel at constant c and bend under gravity.
+- Gravitational time dilation: clocks tick slower in deeper potentials (weak-field approximation).
+- Frame dragging (Lense–Thirring, stylized): spinning masses induce small velocity drags on photons and bodies.
+- Perihelion precession demo: enable GR-inspired correction and compare to Newtonian-like motion; adjustable strength.
+- Black hole visuals (Kerr-inspired): event horizon and equatorial static limit (ergosphere) approximations; spin axis orientation.
+- Gravitational waves visualization: expanding ring from the midpoint of the two most massive bodies; toggleable.
+- Trails: optional trajectory trail for GR demo bodies.
 
-- Frame dragging (Lense–Thirring): masses can have a spin; the grid shows a swirl and trajectories experience a small drag.
-- Black hole visuals: toggle event horizon and ergosphere (Kerr-inspired).
-- Gravitational waves: enable a simple ring-wave visualization from binary inspiral sources.
-- Perihelion precession demo: enable GR-inspired precession and compare to Newtonian-like motion.
-- First-person observer: switch between god view and first-person; local HUD clock shows time dilation relative to a master clock.
+## Dynamic interactions and events
 
-## Tech
+When massive bodies collide or merge, the simulation spawns physical outcomes and transient visuals:
 
-- React + TypeScript (Vite)
-- three.js with @react-three/fiber and @react-three/drei
-- leva for UI controls
-- zustand for app state
+- Black hole + black hole → merged black hole + gravitational wave burst ring.
+- Neutron star + neutron star → kilonova; collapses to black hole if total mass exceeds a TOV-like threshold.
+- Black hole + star/planet → tidal disruption and accretion; the BH accretes mass and spin, with a transient accretion disk.
+- Star + star → merged, hotter star with an explosion effect.
+- Planetary collisions (or planet–star impact) → merged body with a debris ring.
+
+## HUD and analysis
+
+- Select a mass to see an overlay with: position, velocity, mass, spin, gravitational potential Φ, time‑dilation factor dτ/dt, and approximate orbital elements (a, e, rp, ra) relative to the nearest mass.
+- For black holes, HUD also shows Kerr-inspired radii: r+ (horizon) and equatorial static limit.
+- First‑person camera includes a local clock HUD showing accumulated proper time and instantaneous dτ/dt at the camera position.
+
+## Controls (Leva panels)
+
+- Simulation: Play, Pause, Reset Scene, Time Step (dt), quick spawners for photons (left/right), random ring clocks, planets, and test body.
+- Modes: Select, Add Mass, Add Clock, Add Photon. Click on the ground plane to place.
+- View: God View (orbit controls) or First Person.
+- Toggles: Black Hole Visuals, Gravitational Waves, Precession Demo, GR Precession Factor.
+- Selected mass: edit name, mass, black hole toggle, spinY, velocity (vx, vz), and position (x, z).
+
+### Built-in scenarios
+
+- Spawn Inspiral (GW): two black holes on inspiral with GW visualization enabled.
+- Precession Orbit (GR): central star with a light test body on a precessing orbit.
 
 ## Run
 
@@ -30,85 +51,15 @@ npm run dev
 
 Open the local URL printed by Vite.
 
-## Controls
+## Tech
 
-- Use the Leva panels:
-  - Simulation: Play/Pause, Reset, dt, spawn photons/clocks/masses
-  - Modes: Select, Add Mass/Clock/Photon; click the plane to place
-  - Selected: when a mass is selected, adjust mass and position
-  - Additional: mark as black hole, adjust spin (Y axis), toggle visuals
-  - Global toggles: BH visuals, gravitational waves, precession demo, precession strength, view mode
+- React + TypeScript (Vite)
+- three.js with @react-three/fiber and @react-three/drei
+- leva for UI controls
+- zustand for app state
 
-## Notes
+## Notes and limitations
 
-- Physics uses scaled, approximate formulas for interactivity. Not numerically accurate GR.
-- Time dilation uses weak-field factor: sqrt(1 + 2 Phi / c^2).
-- Photons maintain constant speed and are redirected by gravitational acceleration.
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Physics is scaled and approximate for interactivity. It is not a numerically accurate GR solver.
+- Time dilation uses the weak‑field factor: sqrt(1 + 2 Φ / c²) with scene‑scaled constants.
+- Frame dragging and precession are stylized approximations.
